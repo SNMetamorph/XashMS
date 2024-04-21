@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "xash-ms",
+  "version-string": "latest",
+  "builtin-baseline": "733141279aedd0af5268f724431ecfc084197d7f",
+  "dependencies": [
+    { "name": "fmt", "version>=": "10.2.1#2" },
+    { "name": "argparse", "version>=": "3.0" },
+    { "name": "libevent", "version>=": "2.1.12+20230128#0" }
+  ]
+}
