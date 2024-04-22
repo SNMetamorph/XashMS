@@ -17,6 +17,7 @@ GNU General Public License for more details.
 #include "net_address.h"
 #include "infostring_data.h"
 #include "server_list.h"
+#include <optional>
 #include <unordered_map>
 #include <string>
 
@@ -30,8 +31,12 @@ private:
 	void ProcessClientQuery(Socket &socket, const NetAddress &sourceAddr);
 	void ProcessChallengeRequest(Socket &socket, const NetAddress &sourceAddr);
 	void ProcessAddServerRequest(Socket &socket, const NetAddress &sourceAddr);
+
+	void SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, InfostringData &data);
+	void SendChallengeResponse(Socket &socket, const NetAddress &dest, uint32_t ch1, std::optional<uint32_t> ch2);
 	void SendFakeServerInfo(Socket &socket, const NetAddress &dest, InfostringData &data);
 	void SendNatBypassNotify(Socket &socket, const NetAddress &dest, const NetAddress &client);
+
 	bool ValidateClientQueryInfostring(const InfostringData &data);
 	bool ValidateAddServerInfostring(const InfostringData &data);
 

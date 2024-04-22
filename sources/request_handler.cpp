@@ -51,7 +51,8 @@ void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &source
 		return; // invalid request
 	}
 
-	if (!request.SkipString()) { // placeholder addr, ignored
+	// placeholder addr, ignored
+	if (!request.SkipString()) { 
 		return; 
 	}
 
@@ -65,75 +66,24 @@ void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &source
 		return; // invalid query info string
 	}
 
-	// parse query info string, and recompose it to key/value structure
-	InfostringData infostringData(queryInfo);
-	if (!ValidateClientQueryInfostring(infostringData)) {
+	InfostringData data(queryInfo);
+	if (!ValidateClientQueryInfostring(data)) {
 		return; // invalid query info, ignore request
 	}
 
-	if (!infostringData.Contains("clver")) 
-	{
-		SendFakeServerInfo(socket, sourceAddr, infostringData);
-		return;
+	if (!data.Contains("clver")) {
+		SendFakeServerInfo(socket, sourceAddr, data);
 	}
-
-	std::vector<uint8_t> data;
-	BinaryOutputStream response(data);
-	response.WriteString(MasterProtocol::queryPacketHeader);
-
-	if (infostringData.Contains("key")) 
-	{
-		try {
-			uint32_t queryKey = std::stoi(infostringData.Get("key"), nullptr, 16);
-			response.WriteByte(0x7F);
-			response.Write<uint32_t>(queryKey);
-			response.WriteByte(0x00);
-		}
-		catch (const std::exception &ex) {
-			return; // invalid data in query key
-		}
-	}
-
-	bool natBypass = infostringData.Get("nat").compare("0") != 0;
-	for (const auto &entry : m_serverList.GetEntriesCollection()) 
-	{
-		auto &serverAddr = entry.GetAddress();
-		if (!entry.ValidateChallenge())
-			continue;
-
-		if (serverAddr.GetAddressFamily() != sourceAddr.GetAddressFamily())
-			continue;
-
-		if (entry.NatBypassEnabled() != natBypass)
-			continue;
-
-		if (infostringData.Get("gamedir").compare(entry.GetGamedir()) != 0)
-			continue;
-
-		if (infostringData.Contains("protocol"))
-		{
-			uint32_t clientProtocol = std::atoi(infostringData.Get("protocol").c_str());
-			if (entry.GetProtocolVersion() != clientProtocol) {
-				continue;
-			}
-		}
-
-		if (natBypass) {
-			SendNatBypassNotify(socket, serverAddr, sourceAddr);
-		}
-		response.WriteNetAddress(serverAddr);
+	else {
+		SendClientQueryResponse(socket, sourceAddr, data);
 	}
 
 	fmt::print("Client query: {}:{}, gamedir={}, clver={}, nat={}\n", 
 		sourceAddr.ToString(), 
 		sourceAddr.GetPort(), 
-		infostringData.Get("gamedir"),
-		infostringData.Get("clver"),
-		infostringData.Get("nat"));
-
-	// write null address as an end of message marker
-	response.WriteByte(0x00, 6);
-	socket.SendTo(sourceAddr, data);
+		data.Get("gamedir"),
+		data.Get("clver"),
+		data.Get("nat"));
 }
 
 void RequestHandler::ProcessChallengeRequest(Socket &socket, const NetAddress &sourceAddr)
@@ -142,29 +92,27 @@ void RequestHandler::ProcessChallengeRequest(Socket &socket, const NetAddress &s
 		return; // too much servers for this IP
 	}
 
-	auto &recvBuffer = socket.GetDataBuffer();
 	if (!m_serverList.Contains(sourceAddr)) {
 		m_serverList.Insert(sourceAddr);
 	}
 
-	auto entry = m_serverList.FindEntry(sourceAddr);
+	ServerEntry *entry = m_serverList.FindEntry(sourceAddr);
 	if (entry->ChallengeDelay()) {
 		return; 
 	}
 
-	std::vector<uint8_t> data;
-	BinaryOutputStream response(data);
+	auto &recvBuffer = socket.GetDataBuffer();
 	BinaryInputStream request(recvBuffer.data(), recvBuffer.size());
+	std::optional<uint32_t> challenge = std::nullopt;
 
-	response.WriteString(MasterProtocol::challengePacketHeader);
-	response.Write<uint32_t>(entry->GetChallenge());
 	if (recvBuffer.size() == 6)
 	{
 		// write for second challenge 
 		request.SkipBytes(2);
-		response.Write<uint32_t>(request.Read<uint32_t>());
+		challenge = request.Read<uint32_t>();
 	}
-	socket.SendTo(sourceAddr, data);
+
+	SendChallengeResponse(socket, sourceAddr, entry->GetChallenge(), challenge);
 	entry->ResetChallengeDelay();
 }
 
@@ -218,10 +166,78 @@ void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &s
 	}
 }
 
+void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, InfostringData &data)
+{
+	std::vector<uint8_t> buffer;
+	BinaryOutputStream response(buffer);
+
+	response.WriteString(MasterProtocol::queryPacketHeader);
+	if (data.Contains("key")) 
+	{
+		try {
+			uint32_t queryKey = std::stoi(data.Get("key"), nullptr, 16);
+			response.WriteByte(0x7F);
+			response.Write<uint32_t>(queryKey);
+			response.WriteByte(0x00);
+		}
+		catch (const std::exception &ex) {
+			return; // invalid data in query key
+		}
+	}
+
+	bool natBypass = data.Get("nat").compare("0") != 0;
+	for (const auto &entry : m_serverList.GetEntriesCollection()) 
+	{
+		auto &serverAddr = entry.GetAddress();
+		if (!entry.ValidateChallenge())
+			continue;
+
+		if (serverAddr.GetAddressFamily() != clientAddr.GetAddressFamily())
+			continue;
+
+		if (entry.NatBypassEnabled() != natBypass)
+			continue;
+
+		if (data.Get("gamedir").compare(entry.GetGamedir()) != 0)
+			continue;
+
+		if (data.Contains("protocol"))
+		{
+			uint32_t clientProtocol = std::atoi(data.Get("protocol").c_str());
+			if (entry.GetProtocolVersion() != clientProtocol) {
+				continue;
+			}
+		}
+
+		if (natBypass) {
+			SendNatBypassNotify(socket, serverAddr, clientAddr);
+		}
+		response.WriteNetAddress(serverAddr);
+	}
+
+	// write null address as an end of message marker
+	response.WriteByte(0x00, 6);
+	socket.SendTo(clientAddr, buffer);
+}
+
+void RequestHandler::SendChallengeResponse(Socket &socket, const NetAddress &dest, uint32_t ch1, std::optional<uint32_t> ch2)
+{
+	std::vector<uint8_t> buffer;
+	BinaryOutputStream response(buffer);
+	
+	response.WriteString(MasterProtocol::challengePacketHeader);
+	response.Write<uint32_t>(ch1);
+	if (ch2.has_value()) {
+		response.Write<uint32_t>(ch2.value());
+	}
+	socket.SendTo(dest, buffer);
+}
+
 void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, InfostringData &infostringData)
 {
 	std::vector<uint8_t> data;
 	BinaryOutputStream response(data);
+
 	auto sendServerInfo = [&](std::string message) {
 		InfostringData infostring;
 		infostring.Insert("host", message.c_str());
