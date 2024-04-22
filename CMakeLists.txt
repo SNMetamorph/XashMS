@@ -67,6 +67,37 @@ if(BUILD_WIN32)
 	target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32)
 endif()
 
+# get current git commit short hash & branch name
+execute_process(COMMAND "git" "describe" "--always" "--dirty" "--abbrev=7"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	OUTPUT_VARIABLE VCS_CURRENT_COMMIT_HASH
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+execute_process(COMMAND "git" "rev-parse" "--abbrev-ref" "HEAD"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	OUTPUT_VARIABLE VCS_CURRENT_BRANCH_NAME
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if(VCS_CURRENT_COMMIT_HASH)
+	message(STATUS "Commit hash: ${VCS_CURRENT_COMMIT_HASH}")
+	target_compile_definitions(${PROJECT_NAME} PRIVATE
+		BUILD_COMMIT_HASH="${VCS_CURRENT_COMMIT_HASH}"
+	)
+else()
+	message(STATUS "Failed to get current Git commit hash")
+endif()
+
+if(VCS_CURRENT_BRANCH_NAME)
+	message(STATUS "Branch name: ${VCS_CURRENT_BRANCH_NAME}")
+	target_compile_definitions(${PROJECT_NAME} PRIVATE 
+		BUILD_BRANCH_NAME="${VCS_CURRENT_BRANCH_NAME}"
+	)
+else()
+	message(STATUS "Failed to get current Git branch name")
+endif()
+
 set_target_properties(${PROJECT_NAME} PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${DIR_COMMON_OUTPUT}
     LIBRARY_OUTPUT_DIRECTORY ${DIR_COMMON_OUTPUT}
