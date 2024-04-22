@@ -26,6 +26,7 @@ public:
 	int Run(int argc, char *argv[]);
 
 private:
+	void PrintProgramTitle();
 	void InitializeProgramArguments();
 	void InitializeSocketIPv4();
 	void InitializeSocketIPv6();

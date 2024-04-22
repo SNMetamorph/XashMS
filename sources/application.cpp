@@ -14,6 +14,7 @@ GNU General Public License for more details.
 
 #include "application.h"
 #include "build.h"
+#include "build_info.h"
 #include <fmt/core.h>
 #include <stdexcept>
 
@@ -41,8 +42,9 @@ int Application::Run(int argc, char *argv[])
 		fmt::print(m_argsParser.help().str());
 		return 0;
 	}
-
+	
 	try {
+		PrintProgramTitle();
 		m_argsParser.parse_args(argc, argv);
 	}
 	catch (const std::exception& err) {
@@ -73,6 +75,15 @@ int Application::Run(int argc, char *argv[])
 	WSACleanup();
 #endif
 	return 0;
+}
+
+void Application::PrintProgramTitle()
+{
+	fmt::print("\nXashMS started: platform {}, architecture {}, commit {}/{}\n",
+		BuildInfo::GetPlatform(),
+		BuildInfo::GetArchitecture(),
+		BuildInfo::GetCommitHash(), 
+		BuildInfo::GetBranchName());
 }
 
 void Application::InitializeProgramArguments()
