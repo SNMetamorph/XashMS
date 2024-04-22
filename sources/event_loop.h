@@ -14,22 +14,15 @@ GNU General Public License for more details.
 
 #pragma once
 #include "socket.h"
-#include "request_handler.h"
-#include "server_list.h"
 #include <memory>
 
 class EventLoop
 {
 public:
-	EventLoop(std::shared_ptr<Socket> socket_ipv4, std::shared_ptr<Socket> socket_ipv6);
+	EventLoop(std::shared_ptr<Socket> socketIPv4, std::shared_ptr<Socket> socketIPv6);
 	~EventLoop();
-
 	void Run();
 
-	struct LibeventImpl;
-	std::shared_ptr<Socket> m_socket_ipv4;
-	std::shared_ptr<Socket> m_socket_ipv6;
-	std::unique_ptr<RequestHandler> m_packetHandler;
-	std::unique_ptr<ServerList> m_serverList;
-	std::unique_ptr<LibeventImpl> m_libeventImpl;
+	struct Impl;
+	std::unique_ptr<Impl> m_impl;
 };
