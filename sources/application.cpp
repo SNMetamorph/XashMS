@@ -38,7 +38,7 @@ int Application::Run(int argc, char *argv[])
 	InitializeProgramArguments();
 	if (argc == 1) 
 	{
-		m_argsParser.print_help();
+		fmt::print(m_argsParser.help().str());
 		return 0;
 	}
 
