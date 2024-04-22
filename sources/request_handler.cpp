@@ -118,14 +118,8 @@ void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &source
 			}
 		}
 
-		if (natBypass) 
-		{
-			std::vector<uint8_t> tempBuffer;
-			BinaryOutputStream natBypassPacket(tempBuffer);
-			std::string clientAddr = fmt::format("{}:{}", serverAddr.ToString(), serverAddr.GetPort());
-			natBypassPacket.WriteString(MasterProtocol::natBypassPacketHeader);
-			natBypassPacket.WriteBytes(clientAddr.c_str(), clientAddr.size());
-			socket.SendTo(serverAddr, tempBuffer);
+		if (natBypass) {
+			SendNatBypassNotify(socket, serverAddr, sourceAddr);
 		}
 		response.WriteNetAddress(serverAddr);
 	}
@@ -137,7 +131,7 @@ void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &source
 		infostringData.Get("clver"),
 		infostringData.Get("nat"));
 
-	// write null address as a end of message marker
+	// write null address as an end of message marker
 	response.WriteByte(0x00, 6);
 	socket.SendTo(sourceAddr, data);
 }
@@ -253,6 +247,17 @@ void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, 
 	sendServerInfo(u8"устарела");
 	sendServerInfo(u8"Обновите Xash3DFWGS c");
 	sendServerInfo(u8"GooglePlay или GitHub");
+}
+
+void RequestHandler::SendNatBypassNotify(Socket &socket, const NetAddress &dest, const NetAddress &client)
+{
+	std::vector<uint8_t> tempBuffer;
+	BinaryOutputStream natBypassPacket(tempBuffer);
+	std::string addrString = fmt::format("{}:{}", client.ToString(), client.GetPort());
+
+	natBypassPacket.WriteString(MasterProtocol::natBypassPacketHeader);
+	natBypassPacket.WriteBytes(addrString.c_str(), addrString.size());
+	socket.SendTo(dest, tempBuffer);
 }
 
 bool RequestHandler::ValidateClientQueryInfostring(const InfostringData &data)

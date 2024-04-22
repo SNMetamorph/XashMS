@@ -31,6 +31,7 @@ private:
 	void ProcessChallengeRequest(Socket &socket, const NetAddress &sourceAddr);
 	void ProcessAddServerRequest(Socket &socket, const NetAddress &sourceAddr);
 	void SendFakeServerInfo(Socket &socket, const NetAddress &dest, InfostringData &data);
+	void SendNatBypassNotify(Socket &socket, const NetAddress &dest, const NetAddress &client);
 	bool ValidateClientQueryInfostring(const InfostringData &data);
 	bool ValidateAddServerInfostring(const InfostringData &data);
 
