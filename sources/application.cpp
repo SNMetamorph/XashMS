@@ -105,7 +105,7 @@ void Application::InitializeSocketIPv4()
 		}
 		catch (const std::exception &ex) {
 			m_socket_ipv4.reset();
-			fmt::print("Failed to initialize IPv4 socket\n");
+			fmt::print("Failed to initialize IPv4 socket: {}\n", ex.what());
 		}
 	}
 	else {
@@ -128,7 +128,7 @@ void Application::InitializeSocketIPv6()
 		}
 		catch (const std::exception &ex) {
 			m_socket_ipv6.reset();
-			fmt::print("Failed to initialize IPv6 socket\n");
+			fmt::print("Failed to initialize IPv6 socket: {}\n", ex.what());
 		}
 	}
 	else {

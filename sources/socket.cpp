@@ -27,13 +27,13 @@ Socket::Socket(int32_t af, int32_t type, int32_t protocol)
 	m_addressFamily = af;
 	m_socket = socket(af, type, protocol);
 	if (m_socket == EVUTIL_INVALID_SOCKET) {
-		throw std::runtime_error("failed to initialize socket");
+		throw std::runtime_error("socket() returned invalid handle");
 	}
 	if (af == AF_INET6) 
 	{
 		int flag = 1;
 		if (setsockopt(m_socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&flag, sizeof(flag)) != 0) {
-			throw std::runtime_error("IPV6_V6ONLY setsockopt error");
+			throw std::runtime_error("IPV6_V6ONLY setsockopt failed");
 		}
 	}
 	m_dataBuffer.resize(4096);
@@ -110,7 +110,7 @@ NetAddress Socket::RecvFrom()
 	char *dataAddr = reinterpret_cast<char*>(m_dataBuffer.data());
 	int32_t bytesCount = recvfrom(m_socket, dataAddr, m_dataBuffer.capacity(), 0, actualAddr, &sockaddrSize);
 	if (bytesCount == -1) {
-		throw std::runtime_error("recvfrom error");
+		throw std::runtime_error("recvfrom() returned error status");
 	}
 	
 	m_dataBuffer.resize(bytesCount);
