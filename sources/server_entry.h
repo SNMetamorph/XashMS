@@ -24,6 +24,11 @@ class ServerEntry
 {
 public:
 	ServerEntry(const NetAddress &address);
+	ServerEntry(const ServerEntry&) = default;
+	ServerEntry(ServerEntry&&) noexcept = default;
+	ServerEntry& operator=(ServerEntry&&) = default;
+	ServerEntry& operator=(const ServerEntry&) = default;
+
 	void Update(InfostringData &data);
 	bool ChallengeDelay() const;
 	void ResetChallengeDelay();

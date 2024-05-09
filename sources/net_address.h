@@ -39,6 +39,10 @@ public:
 
 	NetAddress(AddressFamily family);
 	~NetAddress() = default;
+	NetAddress(const NetAddress&) = default;
+	NetAddress(NetAddress&&) noexcept = default;
+	NetAddress &operator=(const NetAddress&) = default;
+	NetAddress &operator=(NetAddress&&) = default;
 
 	uint16_t GetPort() const { return m_port; }
 	AddressFamily GetAddressFamily() const { return m_family; }
