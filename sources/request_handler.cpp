@@ -259,10 +259,10 @@ void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, 
 	sendServerInfo(u8"supported anymore");
 	sendServerInfo(u8"Please update Xash3DFWGS");
 	sendServerInfo(u8"From GooglePlay or GitHub");
-	sendServerInfo(u8"Эта версия");
-	sendServerInfo(u8"устарела");
-	sendServerInfo(u8"Обновите Xash3DFWGS c");
-	sendServerInfo(u8"GooglePlay или GitHub");
+	sendServerInfo(u8"Р­С‚Р° РІРµСЂСЃРёСЏ");
+	sendServerInfo(u8"СѓСЃС‚Р°СЂРµР»Р°");
+	sendServerInfo(u8"РћР±РЅРѕРІРёС‚Рµ Xash3DFWGS c");
+	sendServerInfo(u8"GooglePlay РёР»Рё GitHub");
 }
 
 void RequestHandler::SendNatBypassNotify(Socket &socket, const NetAddress &dest, const NetAddress &client)
