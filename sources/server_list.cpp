@@ -22,6 +22,7 @@ void ServerList::CleanupStallServers()
 	};
 	auto it = std::remove_if(m_entries.begin(), m_entries.end(), predicate);
 	m_entries.erase(it, m_entries.end());
+	m_entries.shrink_to_fit();
 }
 
 void ServerList::Insert(const NetAddress &address)
