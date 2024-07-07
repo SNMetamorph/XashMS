@@ -135,7 +135,7 @@ void Application::InitializeSocketIPv6()
 		try {
 			m_socket_ipv6 = std::make_shared<Socket>(AF_INET6, SOCK_DGRAM, 0);
 			m_socket_ipv6->Bind(address);
-			fmt::print("Server IPv6 address: {}:{}\n", address.ToString(), address.GetPort());
+			fmt::print("Server IPv6 address: [{}]:{}\n", address.ToString(), address.GetPort());
 		}
 		catch (const std::exception &ex) {
 			m_socket_ipv6.reset();
