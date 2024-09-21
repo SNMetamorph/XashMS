@@ -17,6 +17,7 @@ GNU General Public License for more details.
 #include "build_info.h"
 #include <fmt/core.h>
 #include <stdexcept>
+#include <cstdio>
 
 #if BUILD_WIN32 == 1
 #include <winsock2.h>
@@ -36,6 +37,7 @@ int Application::Run(int argc, char *argv[])
 	}
 #endif
 
+	std::setbuf(stdout, nullptr);
 	InitializeProgramArguments();
 	if (argc == 1) 
 	{
