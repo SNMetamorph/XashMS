@@ -4,4 +4,4 @@ services:
     container_name: xash-ms
     restart: always
     ports:
-      - "27020:27020/udp"
+      - "27010:27010/udp"
