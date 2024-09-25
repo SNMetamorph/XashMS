@@ -38,12 +38,6 @@ int Application::Run(int argc, char *argv[])
 #endif
 
 	InitializeProgramArguments();
-	if (m_argsParser.get<bool>("--unbuffered"))
-	{
-		std::setbuf(stdout, nullptr);
-		std::setbuf(stderr, nullptr);
-	}
-
 	if (argc == 1) 
 	{
 		fmt::print(m_argsParser.help().str());
@@ -53,6 +47,11 @@ int Application::Run(int argc, char *argv[])
 	try {
 		PrintProgramTitle();
 		m_argsParser.parse_args(argc, argv);
+		if (m_argsParser["--unbuffered"] == true)
+		{
+			std::setbuf(stdout, nullptr);
+			std::setbuf(stderr, nullptr);
+		}
 	}
 	catch (const std::exception& err) {
 		fmt::print("Arguments parsing error: {}\n", err.what());
