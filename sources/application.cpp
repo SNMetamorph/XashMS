@@ -37,8 +37,13 @@ int Application::Run(int argc, char *argv[])
 	}
 #endif
 
-	std::setbuf(stdout, nullptr);
 	InitializeProgramArguments();
+	if (m_argsParser.get<bool>("--unbuffered"))
+	{
+		std::setbuf(stdout, nullptr);
+		std::setbuf(stderr, nullptr);
+	}
+
 	if (argc == 1) 
 	{
 		fmt::print(m_argsParser.help().str());
@@ -101,6 +106,10 @@ void Application::InitializeProgramArguments()
 
 	m_argsParser.add_argument("-ip6", "--ip6")
 		.help("address of IPv6 interface, which will be listened for incoming packets");
+
+	m_argsParser.add_argument("-u", "--unbuffered")
+		.help("force stdout and stderr streams to be unbuffered")
+		.flag();
 }
 
 void Application::InitializeSocketIPv4()
