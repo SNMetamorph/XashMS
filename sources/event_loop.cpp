@@ -15,33 +15,25 @@ GNU General Public License for more details.
 #include "event_loop.h"
 #include "request_handler.h"
 #include "server_list.h"
-#include <event2/event.h>
-#include <event2/event_struct.h>
+#include "libevent_wrappers.h"
 #include <event2/util.h>
 #include <iostream>
-#include <stdexcept>
 #include <csignal>
 
 struct EventLoop::Impl
 {
-	Impl() : 
-		eventBase(nullptr), 
-		eventReceiveIPv4(nullptr), 
-		eventReceiveIPv6(nullptr),
-		eventCleanupTimer(nullptr),
-		eventSigtermSignal(nullptr),
-		eventSigintSignal(nullptr) {};
+	Impl() {};
 
 	void EventRecvIPv4();
 	void EventRecvIPv6();
 	void EventCleanupTimer();
 
-	event_base *eventBase;
-	event *eventReceiveIPv4;
-	event *eventReceiveIPv6;
-	event *eventCleanupTimer;
-	event *eventSigtermSignal;
-	event *eventSigintSignal;
+	std::unique_ptr<ev::EventBase> eventBase;
+	std::unique_ptr<ev::Event> eventReceiveIPv4;
+	std::unique_ptr<ev::Event> eventReceiveIPv6;
+	std::unique_ptr<ev::Event> eventCleanupTimer;
+	std::unique_ptr<ev::Event> eventSigtermSignal;
+	std::unique_ptr<ev::Event> eventSigintSignal;
 
 	std::shared_ptr<Socket> socketIPv4;
 	std::shared_ptr<Socket> socketIPv6;
@@ -56,14 +48,8 @@ EventLoop::EventLoop(std::shared_ptr<Socket> socketIPv4, std::shared_ptr<Socket>
 	m_impl->socketIPv6 = socketIPv6;
 	m_impl->serverList = std::make_unique<ServerList>();
 	m_impl->packetHandler = std::make_unique<RequestHandler>(*m_impl->serverList);
-
-	m_impl->eventBase = event_base_new();
-	if (!m_impl->eventBase) {
-		throw std::runtime_error("failed to initialize libevent base");
-	} 
-	else {
-		evutil_secure_rng_init();
-	}
+	m_impl->eventBase = std::make_unique<ev::EventBase>();
+	evutil_secure_rng_init();
 
 	if (m_impl->socketIPv4)
 	{
@@ -72,14 +58,14 @@ EventLoop::EventLoop(std::shared_ptr<Socket> socketIPv4, std::shared_ptr<Socket>
 			eventLoop->m_impl->EventRecvIPv4();
 		};
 
-		m_impl->eventReceiveIPv4 = event_new(
-			m_impl->eventBase,
+		m_impl->eventReceiveIPv4 = std::make_unique<ev::Event>(
+			*m_impl->eventBase, 
 			m_impl->socketIPv4->GetDescriptor(),
 			EV_READ | EV_PERSIST,
 			ipv4RecvCallback,
 			this
 		);
-		event_add(m_impl->eventReceiveIPv4, NULL);
+		m_impl->eventReceiveIPv4->Add();
 	}
 
 	if (m_impl->socketIPv6)
@@ -89,14 +75,14 @@ EventLoop::EventLoop(std::shared_ptr<Socket> socketIPv4, std::shared_ptr<Socket>
 			eventLoop->m_impl->EventRecvIPv6();
 		};
 
-		m_impl->eventReceiveIPv6 = event_new(
-			m_impl->eventBase,
+		m_impl->eventReceiveIPv6 = std::make_unique<ev::Event>(
+			*m_impl->eventBase,
 			m_impl->socketIPv6->GetDescriptor(),
 			EV_READ | EV_PERSIST,
 			ipv6RecvCallback,
 			this
 		);
-		event_add(m_impl->eventReceiveIPv6, NULL);
+		m_impl->eventReceiveIPv6->Add();
 	}
 
 	auto cleanupTimerCallback = [](evutil_socket_t fd, short event, void *arg) {
@@ -104,74 +90,48 @@ EventLoop::EventLoop(std::shared_ptr<Socket> socketIPv4, std::shared_ptr<Socket>
 		eventLoop->m_impl->EventCleanupTimer();
 	};
 
-	m_impl->eventCleanupTimer = event_new(
-		m_impl->eventBase, 
+	timeval timerInterval = { 10, 0 };
+	m_impl->eventCleanupTimer = std::make_unique<ev::Event>(
+		*m_impl->eventBase, 
 		-1, 
 		EV_PERSIST, 
 		cleanupTimerCallback, 
 		this
 	);
-
-	timeval timerInterval = { 10, 0 };
-	event_add(m_impl->eventCleanupTimer, &timerInterval);
+	m_impl->eventCleanupTimer->Add(&timerInterval);
 
 	auto signalCallback = [](evutil_socket_t fd, short event, void *arg) {
 		EventLoop *eventLoop = reinterpret_cast<EventLoop*>(arg);
-		event_base_loopexit(eventLoop->m_impl->eventBase, nullptr);
+		eventLoop->m_impl->eventBase->LoopExit();
 	};
 
-	m_impl->eventSigtermSignal = event_new(
-		m_impl->eventBase, 
+	m_impl->eventSigtermSignal = std::make_unique<ev::Event>(
+		*m_impl->eventBase, 
 		SIGTERM, 
 		EV_PERSIST | EV_SIGNAL, 
 		signalCallback, 
 		this
 	);
 
-	m_impl->eventSigintSignal = event_new(
-		m_impl->eventBase, 
+	m_impl->eventSigintSignal = std::make_unique<ev::Event>(
+		*m_impl->eventBase, 
 		SIGINT, 
 		EV_PERSIST | EV_SIGNAL, 
 		signalCallback, 
 		this
 	);
 
-	event_add(m_impl->eventSigtermSignal, nullptr);
-	event_add(m_impl->eventSigintSignal, nullptr);
+	m_impl->eventSigtermSignal->Add();
+	m_impl->eventSigintSignal->Add();
 }
 
 EventLoop::~EventLoop()
 {
-	if (m_impl->eventReceiveIPv4) {
-		event_free(m_impl->eventReceiveIPv4);
-	}
-	if (m_impl->eventReceiveIPv6) {
-		event_free(m_impl->eventReceiveIPv6);	
-	}
-	if (m_impl->eventCleanupTimer) {
-		event_free(m_impl->eventCleanupTimer);
-	}
-	if (m_impl->eventSigtermSignal) {
-		event_free(m_impl->eventSigtermSignal);
-	}
-	if (m_impl->eventSigintSignal) {
-		event_free(m_impl->eventSigintSignal);
-	}
-	if (m_impl->eventBase) {
-		event_base_free(m_impl->eventBase);
-	}
-
-	m_impl->eventReceiveIPv4 = nullptr;
-	m_impl->eventReceiveIPv6 = nullptr;
-	m_impl->eventCleanupTimer = nullptr;
-	m_impl->eventSigtermSignal = nullptr;
-	m_impl->eventSigintSignal = nullptr;
-	m_impl->eventBase = nullptr;
 }
 
 void EventLoop::Run()
 {
-	event_base_dispatch(m_impl->eventBase);
+	m_impl->eventBase->Dispatch();
 }
 
 void EventLoop::Impl::EventRecvIPv4()

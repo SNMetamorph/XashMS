@@ -18,6 +18,7 @@ list(APPEND FILE_SOURCES
 	"sources/server_list.cpp"
 	"sources/server_entry.cpp"
 	"sources/event_loop.cpp"
+	"sources/libevent_wrappers.cpp"
 	"sources/net_address.cpp"
 	"sources/infostring_data.cpp"
 	"sources/request_handler.cpp"
