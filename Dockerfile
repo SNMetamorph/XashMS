@@ -27,4 +27,5 @@ USER masterserver
 WORKDIR /app
 COPY --chown=masterserver:masterserver --from=build /project/build/bin/Debug .
 EXPOSE 27010/udp
-ENTRYPOINT [ "./xash-ms", "--ip", "0.0.0.0", "--ip6", "::", "--port", "27010", "--unbuffered" ]
+ENTRYPOINT ["./xash-ms"]
+CMD ["--ip", "0.0.0.0", "--ip6", "::", "--port", "27010", "--unbuffered"]
