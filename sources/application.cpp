@@ -67,9 +67,10 @@ int Application::Run(int argc, char *argv[])
 
 	if (m_socket_ipv4 || m_socket_ipv6) 
 	{
-		fmt::print("Starting requests listening...\n\n");
+		fmt::print("Starting listening for requests...\n");
 		m_eventLoop = std::make_unique<EventLoop>(m_socket_ipv4, m_socket_ipv6);
 		m_eventLoop->Run();
+		fmt::print("Shutting down...\n");
 	}
 	else 
 	{

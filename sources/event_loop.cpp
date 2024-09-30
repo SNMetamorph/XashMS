@@ -20,6 +20,7 @@ GNU General Public License for more details.
 #include <event2/util.h>
 #include <iostream>
 #include <stdexcept>
+#include <csignal>
 
 struct EventLoop::Impl
 {
@@ -27,7 +28,9 @@ struct EventLoop::Impl
 		eventBase(nullptr), 
 		eventReceiveIPv4(nullptr), 
 		eventReceiveIPv6(nullptr),
-		eventCleanupTimer(nullptr) {};
+		eventCleanupTimer(nullptr),
+		eventSigtermSignal(nullptr),
+		eventSigintSignal(nullptr) {};
 
 	void EventRecvIPv4();
 	void EventRecvIPv6();
@@ -37,6 +40,8 @@ struct EventLoop::Impl
 	event *eventReceiveIPv4;
 	event *eventReceiveIPv6;
 	event *eventCleanupTimer;
+	event *eventSigtermSignal;
+	event *eventSigintSignal;
 
 	std::shared_ptr<Socket> socketIPv4;
 	std::shared_ptr<Socket> socketIPv6;
@@ -109,6 +114,30 @@ EventLoop::EventLoop(std::shared_ptr<Socket> socketIPv4, std::shared_ptr<Socket>
 
 	timeval timerInterval = { 10, 0 };
 	event_add(m_impl->eventCleanupTimer, &timerInterval);
+
+	auto signalCallback = [](evutil_socket_t fd, short event, void *arg) {
+		EventLoop *eventLoop = reinterpret_cast<EventLoop*>(arg);
+		event_base_loopexit(eventLoop->m_impl->eventBase, nullptr);
+	};
+
+	m_impl->eventSigtermSignal = event_new(
+		m_impl->eventBase, 
+		SIGTERM, 
+		EV_PERSIST | EV_SIGNAL, 
+		signalCallback, 
+		this
+	);
+
+	m_impl->eventSigintSignal = event_new(
+		m_impl->eventBase, 
+		SIGINT, 
+		EV_PERSIST | EV_SIGNAL, 
+		signalCallback, 
+		this
+	);
+
+	event_add(m_impl->eventSigtermSignal, nullptr);
+	event_add(m_impl->eventSigintSignal, nullptr);
 }
 
 EventLoop::~EventLoop()
@@ -122,6 +151,12 @@ EventLoop::~EventLoop()
 	if (m_impl->eventCleanupTimer) {
 		event_free(m_impl->eventCleanupTimer);
 	}
+	if (m_impl->eventSigtermSignal) {
+		event_free(m_impl->eventSigtermSignal);
+	}
+	if (m_impl->eventSigintSignal) {
+		event_free(m_impl->eventSigintSignal);
+	}
 	if (m_impl->eventBase) {
 		event_base_free(m_impl->eventBase);
 	}
@@ -129,6 +164,8 @@ EventLoop::~EventLoop()
 	m_impl->eventReceiveIPv4 = nullptr;
 	m_impl->eventReceiveIPv6 = nullptr;
 	m_impl->eventCleanupTimer = nullptr;
+	m_impl->eventSigtermSignal = nullptr;
+	m_impl->eventSigintSignal = nullptr;
 	m_impl->eventBase = nullptr;
 }
 
