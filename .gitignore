@@ -332,3 +332,6 @@ __pycache__
 
 # Visual Studio Code
 .vscode/
+
+# Docker
+docker-compose.override.yml
