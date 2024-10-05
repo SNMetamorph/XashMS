@@ -59,16 +59,16 @@ int Application::Run(int argc, char *argv[])
 	}
 
 	if (m_argsParser.present("--ip")) {
-		InitializeSocketIPv4();
+		InitializeSocketInet();
 	}
 	if (m_argsParser.present("--ip6")) {
-		InitializeSocketIPv6();
+		InitializeSocketInet6();
 	}
 
-	if (m_socket_ipv4 || m_socket_ipv6) 
+	if (m_socketInet || m_socketInet6) 
 	{
 		fmt::print("Starting listening for requests...\n");
-		m_eventLoop = std::make_unique<EventLoop>(m_socket_ipv4, m_socket_ipv6);
+		m_eventLoop = std::make_unique<EventLoop>(m_socketInet, m_socketInet6);
 		m_eventLoop->Run();
 		fmt::print("Shutting down...\n");
 	}
@@ -112,7 +112,7 @@ void Application::InitializeProgramArguments()
 		.flag();
 }
 
-void Application::InitializeSocketIPv4()
+void Application::InitializeSocketInet()
 {
 	NetAddress address(NetAddress::AddressFamily::IPv4);
 	std::string addressString = m_argsParser.get<std::string>("--ip").c_str();
@@ -121,12 +121,12 @@ void Application::InitializeSocketIPv4()
 	if (address.FromString(addressString.c_str(), portNumber))
 	{
 		try {
-			m_socket_ipv4 = std::make_shared<Socket>(AF_INET, SOCK_DGRAM, 0);
-			m_socket_ipv4->Bind(address);
+			m_socketInet = std::make_shared<Socket>(AF_INET, SOCK_DGRAM, 0);
+			m_socketInet->Bind(address);
 			fmt::print("Server IPv4 address: {}:{}\n", address.ToString(), address.GetPort());
 		}
 		catch (const std::exception &ex) {
-			m_socket_ipv4.reset();
+			m_socketInet.reset();
 			fmt::print("Failed to initialize IPv4 socket: {}\n", ex.what());
 		}
 	}
@@ -135,7 +135,7 @@ void Application::InitializeSocketIPv4()
 	}
 }
 
-void Application::InitializeSocketIPv6()
+void Application::InitializeSocketInet6()
 {
 	NetAddress address(NetAddress::AddressFamily::IPv6);
 	std::string addressString = m_argsParser.get<std::string>("--ip6").c_str();
@@ -144,12 +144,12 @@ void Application::InitializeSocketIPv6()
 	if (address.FromString(addressString.c_str(), portNumber)) 
 	{
 		try {
-			m_socket_ipv6 = std::make_shared<Socket>(AF_INET6, SOCK_DGRAM, 0);
-			m_socket_ipv6->Bind(address);
+			m_socketInet6 = std::make_shared<Socket>(AF_INET6, SOCK_DGRAM, 0);
+			m_socketInet6->Bind(address);
 			fmt::print("Server IPv6 address: [{}]:{}\n", address.ToString(), address.GetPort());
 		}
 		catch (const std::exception &ex) {
-			m_socket_ipv6.reset();
+			m_socketInet6.reset();
 			fmt::print("Failed to initialize IPv6 socket: {}\n", ex.what());
 		}
 	}

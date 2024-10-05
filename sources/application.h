@@ -28,11 +28,11 @@ public:
 private:
 	void PrintProgramTitle();
 	void InitializeProgramArguments();
-	void InitializeSocketIPv4();
-	void InitializeSocketIPv6();
+	void InitializeSocketInet();
+	void InitializeSocketInet6();
 
 	argparse::ArgumentParser m_argsParser;
-	std::shared_ptr<Socket> m_socket_ipv4;
-	std::shared_ptr<Socket> m_socket_ipv6;
+	std::shared_ptr<Socket> m_socketInet;
+	std::shared_ptr<Socket> m_socketInet6;
 	std::unique_ptr<EventLoop> m_eventLoop;
 };
