@@ -49,6 +49,11 @@ bool NetAddress::FromString(const char *address, uint16_t port)
 	return true;
 }
 
+bool NetAddress::operator==(const NetAddress &rhs) const
+{
+	return Equals(rhs, true);
+}
+
 std::pair<const uint8_t*, size_t> NetAddress::GetAddressSpan() const
 {
 	return std::pair<const uint8_t*, size_t>(m_addressData.data(), m_family == AddressFamily::IPv6 ? 16 : 4);

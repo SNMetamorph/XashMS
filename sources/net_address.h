@@ -16,6 +16,7 @@ GNU General Public License for more details.
 #include "build.h"
 #include <stdint.h>
 #include <string>
+#include <string_view>
 #include <array>
 #include <utility>
 
@@ -31,6 +32,8 @@ GNU General Public License for more details.
 class NetAddress
 {
 public:
+	friend class NetAddressHash;
+	friend class NetAddressPortHash;
 	enum class AddressFamily
 	{
 		IPv4,
@@ -43,6 +46,7 @@ public:
 	NetAddress(NetAddress&&) noexcept = default;
 	NetAddress &operator=(const NetAddress&) = default;
 	NetAddress &operator=(NetAddress&&) = default;
+	bool operator==(const NetAddress &rhs) const;
 
 	uint16_t GetPort() const { return m_port; }
 	AddressFamily GetAddressFamily() const { return m_family; }
@@ -60,4 +64,26 @@ private:
 	uint16_t m_port;
 	AddressFamily m_family;
 	std::array<uint8_t, 16> m_addressData;
+};
+
+class NetAddressHash
+{
+public:
+	std::size_t operator()(const NetAddress &address) const noexcept
+    {
+		std::size_t addrSize = address.GetAddressSpan().second;
+		return std::hash<std::string_view>{}({ reinterpret_cast<const char*>(address.m_addressData.data()), addrSize });
+    }
+};
+
+class NetAddressPortHash
+{
+public:
+	std::size_t operator()(const NetAddress &address) const noexcept
+    {
+		std::size_t addrSize = address.GetAddressSpan().second;
+        std::size_t addrHash = std::hash<std::string_view>{}({ reinterpret_cast<const char*>(address.m_addressData.data()), addrSize });
+        std::size_t portHash = std::hash<uint16_t>{}(address.m_port);
+        return addrHash ^ (portHash << 1);
+    }
 };
