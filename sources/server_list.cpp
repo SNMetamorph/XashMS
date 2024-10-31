@@ -60,7 +60,7 @@ bool ServerList::ValidateChallenge(const NetAddress &address, uint32_t challenge
 
 size_t ServerList::GetCountForAddress(const NetAddress &addr) const
 {
-	return m_serverCountMap.at(addr);
+	return (m_serverCountMap.count(addr) < 1) ? 0 : m_serverCountMap.at(addr);
 }
 
 void ServerList::CleanupStallServers()
