@@ -71,7 +71,7 @@ void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &source
 		return; // invalid query info, ignore request
 	}
 
-	if (!data.Contains("clver")) {
+	if (!data["clver"].has_value()) {
 		SendFakeServerInfo(socket, sourceAddr, data);
 	}
 	else {
@@ -81,9 +81,9 @@ void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &source
 	fmt::print("Client query: {}:{}, gamedir={}, clver={}, nat={}\n", 
 		sourceAddr.ToString(), 
 		sourceAddr.GetPort(), 
-		data.Get("gamedir"),
-		data.Get("clver"),
-		data.Get("nat"));
+		data["gamedir"].value(),
+		data["clver"].value(),
+		data["nat"].value());
 }
 
 void RequestHandler::ProcessChallengeRequest(Socket &socket, const NetAddress &sourceAddr)
@@ -172,10 +172,10 @@ void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &c
 	BinaryOutputStream response(buffer);
 
 	response.WriteString(MasterProtocol::queryPacketHeader);
-	if (data.Contains("key")) 
+	if (data["key"].has_value())
 	{
 		try {
-			uint32_t queryKey = std::stoi(data.Get("key"), nullptr, 16);
+			uint32_t queryKey = std::stoi(data["key"].value(), nullptr, 16);
 			response.WriteByte(0x7F);
 			response.Write<uint32_t>(queryKey);
 			response.WriteByte(0x00);
@@ -185,7 +185,7 @@ void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &c
 		}
 	}
 
-	bool natBypass = data.Get("nat").compare("0") != 0;
+	bool natBypass = data["nat"].value().compare("0") != 0;
 	for (const auto &entry : m_serverList.GetEntriesCollection()) 
 	{
 		auto &serverAddr = entry.GetAddress();
@@ -198,12 +198,12 @@ void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &c
 		if (entry.NatBypassEnabled() != natBypass)
 			continue;
 
-		if (data.Get("gamedir").compare(entry.GetGamedir()) != 0)
+		if (data["gamedir"].value().compare(entry.GetGamedir()) != 0)
 			continue;
 
-		if (data.Contains("protocol"))
+		if (data["protocol"].has_value())
 		{
-			uint32_t clientProtocol = std::atoi(data.Get("protocol").c_str());
+			uint32_t clientProtocol = std::atoi(data["protocol"].value().c_str());
 			if (entry.GetProtocolVersion() != clientProtocol) {
 				continue;
 			}
@@ -240,14 +240,14 @@ void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, 
 
 	auto sendServerInfo = [&](std::string message) {
 		InfostringData infostring;
-		infostring.Insert("host", message.c_str());
+		infostring.Insert("host", message);
 		infostring.Insert("map", "update");
 		infostring.Insert("dm", "0");
 		infostring.Insert("team", "0");
 		infostring.Insert("coop", "0");
 		infostring.Insert("numcl", "32");
 		infostring.Insert("maxcl", "32");
-		infostring.Insert("gamedir", infostringData.Get("gamedir").c_str());
+		infostring.Insert("gamedir", infostringData["gamedir"].value());
 
 		data.clear();
 		response.WriteString(MasterProtocol::fakeServerInfoHeader);
@@ -278,10 +278,10 @@ void RequestHandler::SendNatBypassNotify(Socket &socket, const NetAddress &dest,
 
 bool RequestHandler::ValidateClientQueryInfostring(const InfostringData &data)
 {
-	if (!data.Contains("gamedir")) {
+	if (!data["gamedir"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("nat")) {
+	if (!data["nat"].has_value()) {
 		return false;
 	}
 	return true;
@@ -289,52 +289,52 @@ bool RequestHandler::ValidateClientQueryInfostring(const InfostringData &data)
 
 bool RequestHandler::ValidateAddServerInfostring(const InfostringData &data)
 {
-	if (!data.Contains("challenge")) {
+	if (!data["challenge"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("protocol")) {
+	if (!data["protocol"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("players")) {
+	if (!data["players"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("max")) {
+	if (!data["max"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("bots")) {
+	if (!data["bots"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("region")) {
+	if (!data["region"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("gamedir")) {
+	if (!data["gamedir"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("map")) {
+	if (!data["map"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("version")) {
+	if (!data["version"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("os")) {
+	if (!data["os"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("product")) {
+	if (!data["product"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("type")) {
+	if (!data["type"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("password")) {
+	if (!data["password"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("secure")) {
+	if (!data["secure"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("lan")) {
+	if (!data["lan"].has_value()) {
 		return false;
 	}
-	if (!data.Contains("nat")) {
+	if (!data["nat"].has_value()) {
 		return false;
 	}
 	return true;

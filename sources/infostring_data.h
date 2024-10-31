@@ -15,6 +15,7 @@ GNU General Public License for more details.
 #pragma once
 #include <string>
 #include <unordered_map>
+#include <optional>
 #include <stdint.h>
 
 class InfostringData
@@ -24,10 +25,11 @@ public:
 	InfostringData(const std::string &data);
 
 	void Parse(const std::string &data);
-	bool Contains(const char *key) const;
 	void Insert(const char *key, const char *value);
-	const std::string &Get(const char *key);
+	void Insert(const std::string &key, const std::string &value);
 	std::string ToString() const;
+	std::optional<std::string> operator[](const char *key) const;
+	std::optional<std::string> operator[](const std::string &key) const;
 
 private:
 	std::unordered_map<std::string, std::string> m_hashmap;

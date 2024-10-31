@@ -38,23 +38,23 @@ ServerEntry::ServerEntry(const NetAddress &address) :
 
 void ServerEntry::Update(InfostringData &data)
 {
-	m_challengeRecv = std::atoll(data.Get("challenge").c_str());
-	m_protocol = std::atoll(data.Get("protocol").c_str());
-	m_players = std::atoll(data.Get("players").c_str());
-	m_maxPlayers = std::atoll(data.Get("max").c_str());
-	m_bots = std::atoll(data.Get("bots").c_str());
-	m_regionCode = std::atoll(data.Get("region").c_str());
+	m_challengeRecv = std::atoll(data["challenge"].value().c_str());
+	m_protocol = std::atoll(data["protocol"].value().c_str());
+	m_players = std::atoll(data["players"].value().c_str());
+	m_maxPlayers = std::atoll(data["max"].value().c_str());
+	m_bots = std::atoll(data["bots"].value().c_str());
+	m_regionCode = std::atoll(data["region"].value().c_str());
 
-	m_gamedir = data.Get("gamedir");
-	m_mapName = data.Get("map");
-	m_clientVersion = data.Get("version");
-	m_osType = data.Get("os");
-	m_product = data.Get("product");
-	m_dedicated = data.Get("type").compare("d") == 0 ? true : false;
-	m_passwordUsed = data.Get("password").compare("0") == 0 ? false : true;
-	m_secured = data.Get("secure").compare("0") == 0 ? false : true;
-	m_lanMode = data.Get("lan").compare("0") == 0 ? false : true;
-	m_natBypass = data.Get("nat").compare("0") == 0 ? false : true;
+	m_gamedir = data["gamedir"].value();
+	m_mapName = data["map"].value();
+	m_clientVersion = data["version"].value();
+	m_osType = data["os"].value();
+	m_product = data["product"].value();
+	m_dedicated = !data["type"].value().compare("d") ? true : false;
+	m_passwordUsed = !data["password"].value().compare("0") ? false : true;
+	m_secured = !data["secure"].value().compare("0") ? false : true;
+	m_lanMode = !data["lan"].value().compare("0") ? false : true;
+	m_natBypass = !data["nat"].value().compare("0") ? false : true;
 }
 
 bool ServerEntry::ChallengeDelay() const

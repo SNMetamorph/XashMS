@@ -20,6 +20,16 @@ InfostringData::InfostringData(const std::string &data)
 	Parse(data);
 }
 
+void InfostringData::Insert(const char *key, const char *value)
+{
+	m_hashmap.insert_or_assign(key, value);
+}
+
+void InfostringData::Insert(const std::string &key, const std::string &value)
+{
+	m_hashmap.insert_or_assign(key, value);
+}
+
 void InfostringData::Parse(const std::string &data)
 {
 	std::string key, value;
@@ -64,17 +74,12 @@ std::string InfostringData::ToString() const
 	return result;
 }
 
-bool InfostringData::Contains(const char *key) const
+std::optional<std::string> InfostringData::operator[](const char *key) const
 {
-	return m_hashmap.count(key) > 0;
+	return m_hashmap.count(key) > 0 ? std::optional<std::string>(m_hashmap.at(key)) : std::nullopt;
 }
 
-const std::string &InfostringData::Get(const char *key)
+std::optional<std::string> InfostringData::operator[](const std::string &key) const
 {
-	return m_hashmap[key];
-}
-
-void InfostringData::Insert(const char *key, const char *value)
-{
-	m_hashmap.insert_or_assign(key, value);
+	return m_hashmap.count(key) > 0 ? std::optional<std::string>(m_hashmap.at(key)) : std::nullopt;
 }
