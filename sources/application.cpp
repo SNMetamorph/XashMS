@@ -15,7 +15,7 @@ GNU General Public License for more details.
 #include "application.h"
 #include "build.h"
 #include "build_info.h"
-#include <fmt/core.h>
+#include "utils.h"
 #include <stdexcept>
 #include <cstdio>
 
@@ -40,7 +40,7 @@ int Application::Run(int argc, char *argv[])
 	InitializeProgramArguments();
 	if (argc == 1) 
 	{
-		fmt::print(m_argsParser.help().str());
+		Utils::Log(m_argsParser.help().str());
 		return 0;
 	}
 	
@@ -54,7 +54,7 @@ int Application::Run(int argc, char *argv[])
 		}
 	}
 	catch (const std::exception& err) {
-		fmt::print("Arguments parsing error: {}\n", err.what());
+		Utils::Log("Arguments parsing error: {}\n", err.what());
 		return -1;
 	}
 
@@ -67,14 +67,14 @@ int Application::Run(int argc, char *argv[])
 
 	if (m_socketInet || m_socketInet6) 
 	{
-		fmt::print("Starting listening for requests...\n");
+		Utils::Log("Starting listening for requests...\n");
 		m_eventLoop = std::make_unique<EventLoop>(m_socketInet, m_socketInet6);
 		m_eventLoop->Run();
-		fmt::print("Shutting down...\n");
+		Utils::Log("Shutting down...\n");
 	}
 	else 
 	{
-		fmt::print("Failed to initialize both IPv4 and IPv6 sockets, exiting.\n");
+		Utils::Log("Failed to initialize both IPv4 and IPv6 sockets, exiting.\n");
 		return -1;
 	}
 
@@ -86,7 +86,7 @@ int Application::Run(int argc, char *argv[])
 
 void Application::PrintProgramTitle()
 {
-	fmt::print("\nXashMS started: platform {}, architecture {}, commit {}/{}\n",
+	Utils::Log("\nXashMS started: platform {}, architecture {}, commit {}/{}\n",
 		BuildInfo::GetPlatform(),
 		BuildInfo::GetArchitecture(),
 		BuildInfo::GetCommitHash(), 
@@ -123,15 +123,15 @@ void Application::InitializeSocketInet()
 		try {
 			m_socketInet = std::make_shared<Socket>(AF_INET, SOCK_DGRAM, 0);
 			m_socketInet->Bind(address);
-			fmt::print("Server IPv4 address: {}:{}\n", address.ToString(), address.GetPort());
+			Utils::Log("Server IPv4 address: {}:{}\n", address.ToString(), address.GetPort());
 		}
 		catch (const std::exception &ex) {
 			m_socketInet.reset();
-			fmt::print("Failed to initialize IPv4 socket: {}\n", ex.what());
+			Utils::Log("Failed to initialize IPv4 socket: {}\n", ex.what());
 		}
 	}
 	else {
-		fmt::print("Failed to parse IPv4 interface address\n");
+		Utils::Log("Failed to parse IPv4 interface address\n");
 	}
 }
 
@@ -146,14 +146,14 @@ void Application::InitializeSocketInet6()
 		try {
 			m_socketInet6 = std::make_shared<Socket>(AF_INET6, SOCK_DGRAM, 0);
 			m_socketInet6->Bind(address);
-			fmt::print("Server IPv6 address: [{}]:{}\n", address.ToString(), address.GetPort());
+			Utils::Log("Server IPv6 address: [{}]:{}\n", address.ToString(), address.GetPort());
 		}
 		catch (const std::exception &ex) {
 			m_socketInet6.reset();
-			fmt::print("Failed to initialize IPv6 socket: {}\n", ex.what());
+			Utils::Log("Failed to initialize IPv6 socket: {}\n", ex.what());
 		}
 	}
 	else {
-		fmt::print("Failed to parse IPv6 interface address\n");
+		Utils::Log("Failed to parse IPv6 interface address\n");
 	}
 }

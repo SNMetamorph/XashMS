@@ -16,7 +16,7 @@ GNU General Public License for more details.
 #include "master_protocol.h"
 #include "binary_input_stream.h"
 #include "binary_output_stream.h"
-#include <fmt/core.h>
+#include "utils.h"
 
 RequestHandler::RequestHandler(ServerList &serverList) :
 	m_serverList(serverList)
@@ -78,7 +78,7 @@ void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &source
 		SendClientQueryResponse(socket, sourceAddr, data);
 	}
 
-	fmt::print("Client query: {}:{}, gamedir={}, clver={}, nat={}\n", 
+	Utils::Log("Client query: {}:{}, gamedir={}, clver={}, nat={}\n", 
 		sourceAddr.ToString(), 
 		sourceAddr.GetPort(), 
 		data["gamedir"].value(),
@@ -123,7 +123,7 @@ void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &s
 
 	if (!m_serverList.CheckForChallenge(sourceAddr)) 
 	{
-		fmt::print("Server skipped challenge request: {}:{}\n", sourceAddr.ToString(), sourceAddr.GetPort());
+		Utils::Log("Server skipped challenge request: {}:{}\n", sourceAddr.ToString(), sourceAddr.GetPort());
 		return;
 	}
 
@@ -141,7 +141,7 @@ void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &s
 		uint32_t challengeRecv = std::atoll(data["challenge"].value().c_str());
 		if (!m_serverList.ValidateChallenge(sourceAddr, challengeRecv))
 		{
-			fmt::print("Incorrect challenge from {}:{}: value {}\n", sourceAddr.ToString(), sourceAddr.GetPort(), challengeRecv);
+			Utils::Log("Incorrect challenge from {}:{}: value {}\n", sourceAddr.ToString(), sourceAddr.GetPort(), challengeRecv);
 			return;
 		}
 	}
@@ -149,7 +149,7 @@ void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &s
 	// check for request infostring correctness and fullness
 	if (!ValidateAddServerInfostring(data))
 	{
-		fmt::print("Invalid add server query infostring: {}:{}\n", sourceAddr.ToString(), sourceAddr.GetPort());
+		Utils::Log("Invalid add server query infostring: {}:{}\n", sourceAddr.ToString(), sourceAddr.GetPort());
 		return;
 	}
 
@@ -158,8 +158,8 @@ void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &s
 	server.Update(data); 
 	server.ResetTimeout();
 
-	fmt::print(serverExists ? "Updated " : "Added ");
-	fmt::print("server: {}:{}, game={}/{}, protocol={}, players={}/{}/{}, version={}\n", 
+	Utils::Log(serverExists ? "Updated " : "Added ");
+	Utils::Log("server: {}:{}, game={}/{}, protocol={}, players={}/{}/{}, version={}\n", 
 		sourceAddr.ToString(), 
 		sourceAddr.GetPort(), 
 		server.GetMapName(), 
