@@ -94,7 +94,7 @@ void ServerList::RemoveTimeoutChallenges()
 	{
 		const auto &address = it->first;
 		const auto &entry = it->second;
-		if (m_serversMap.count(address) < 1 && entry.Timeout()) {
+		if (entry.Timeout()) {
 			it = m_challengeMap.erase(it);
 		}
 		else {
