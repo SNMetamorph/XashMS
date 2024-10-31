@@ -30,17 +30,11 @@ public:
 	ServerEntry& operator=(const ServerEntry&) = default;
 
 	void Update(InfostringData &data);
-	bool ChallengeDelay() const;
-	void ResetChallengeDelay();
 	void ResetTimeout();
-	void Approve();
-	bool ValidateChallenge() const;
-	bool TimedOut() const;
+	bool Timeout() const;
 
-	bool IsApproved() const { return m_approved; }
 	bool NatBypassEnabled() const { return m_natBypass; }
 	uint32_t GetProtocolVersion() const { return m_protocol; }
-	uint32_t GetChallenge() const { return m_challenge; }
 	uint32_t GetMaxPlayers() const { return m_maxPlayers; }
 	uint32_t GetBotsCount() const { return m_bots; }
 	uint32_t GetPlayersCount() const { return m_players; }
@@ -51,8 +45,6 @@ public:
 
 private:
 	NetAddress m_address;
-	uint32_t m_challenge;
-	uint32_t m_challengeRecv;
 	uint32_t m_protocol;
 	uint32_t m_players;
 	uint32_t m_maxPlayers;
@@ -69,7 +61,5 @@ private:
 	bool m_lanMode;
 	bool m_natBypass;
 	bool m_dedicated;
-	bool m_approved;
-	Timer m_challengeSendTimer;
 	Timer m_keepAliveTimer;
 };

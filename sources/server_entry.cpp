@@ -13,7 +13,6 @@ GNU General Public License for more details.
 */
 
 #include "server_entry.h"
-#include <event2/util.h>
 
 ServerEntry::ServerEntry(const NetAddress &address) :
 	m_address(address),
@@ -21,24 +20,19 @@ ServerEntry::ServerEntry(const NetAddress &address) :
 	m_players(0),
 	m_protocol(0),
 	m_regionCode(0),
-	m_challengeRecv(0),
 	m_dedicated(false),
 	m_lanMode(false),
 	m_maxPlayers(0),
 	m_natBypass(false),
 	m_passwordUsed(false),
-	m_secured(false),
-	m_approved(false)
+	m_secured(false)
 {
 	m_keepAliveTimer.Reset();
-	m_keepAliveTimer.SetInterval(5.0);
-	m_challengeSendTimer.SetInterval(5.0);
-	evutil_secure_rng_get_bytes(&m_challenge, sizeof(m_challenge));
+	m_keepAliveTimer.SetInterval(600.0);
 }
 
 void ServerEntry::Update(InfostringData &data)
 {
-	m_challengeRecv = std::atoll(data["challenge"].value().c_str());
 	m_protocol = std::atoll(data["protocol"].value().c_str());
 	m_players = std::atoll(data["players"].value().c_str());
 	m_maxPlayers = std::atoll(data["max"].value().c_str());
@@ -57,33 +51,12 @@ void ServerEntry::Update(InfostringData &data)
 	m_natBypass = !data["nat"].value().compare("0") ? false : true;
 }
 
-bool ServerEntry::ChallengeDelay() const
-{
-	return !m_challengeSendTimer.CycleElapsed();
-}
-
-void ServerEntry::ResetChallengeDelay()
-{
-	m_challengeSendTimer.Reset();
-}
-
 void ServerEntry::ResetTimeout()
 {
 	m_keepAliveTimer.Reset();
-	m_keepAliveTimer.SetInterval(600.0);
 }
 
-void ServerEntry::Approve()
-{
-	m_approved = true;
-}
-
-bool ServerEntry::ValidateChallenge() const
-{
-	return m_challenge == m_challengeRecv;
-}
-
-bool ServerEntry::TimedOut() const
+bool ServerEntry::Timeout() const
 {
 	return m_keepAliveTimer.CycleElapsed();
 }

@@ -18,19 +18,49 @@ GNU General Public License for more details.
 #include "server_entry.h"
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <stdint.h>
 
 class ServerList
 {
 public:
-	void CleanupStallServers();
-	void Insert(const NetAddress &address);
+	using EntryContainer = std::unordered_map<NetAddress, ServerEntry, NetAddressPortHash>;
+
+	void UpdateState();
+	ServerEntry &Insert(const NetAddress &address);
 	bool Contains(const NetAddress &address) const;
-	ServerEntry *FindEntry(const NetAddress &address);
-	size_t CountForAddress(const NetAddress &addr) const;
-	const std::vector<ServerEntry> &GetEntriesCollection() const { return m_entries; }
-	static constexpr size_t GetMaxServersForIP() { return 14; }
+
+	uint32_t GenerateChallenge(const NetAddress &address);
+	bool CheckForChallenge(const NetAddress &address) const;
+	bool ValidateChallenge(const NetAddress &address, uint32_t challenge) const;
+
+	size_t GetCountForAddress(const NetAddress &addr) const;
+	const EntryContainer &GetEntriesCollection() const { return m_serversMap; }
+	static constexpr size_t GetQuotaPerAddress() { return 14; }
 
 private:
-	std::vector<ServerEntry> m_entries;
+	class ChallengeEntry
+	{
+	public:
+		ChallengeEntry(uint32_t ch) :
+			m_value(ch)
+		{
+			m_occupancyTimer.SetInterval(15.0);
+			m_occupancyTimer.Reset();
+		}
+
+		uint32_t GetValue() const { return m_value; }
+		bool Timeout() const { return m_occupancyTimer.CycleElapsed(); }
+
+	private:
+		uint32_t m_value;
+		Timer m_occupancyTimer;
+	};
+
+	void CleanupStallServers();
+	void RemoveTimeoutChallenges();
+
+	EntryContainer m_serversMap;
+	std::unordered_map<NetAddress, ChallengeEntry, NetAddressPortHash> m_challengeMap;
+	std::unordered_map<NetAddress, int32_t, NetAddressHash> m_serverCountMap;
 };

@@ -178,5 +178,5 @@ void EventLoop::Impl::RecvInet6Callback()
 
 void EventLoop::Impl::CleanupTimerCallback()
 {
-	m_serverList->CleanupStallServers();
+	m_serverList->UpdateState();
 }

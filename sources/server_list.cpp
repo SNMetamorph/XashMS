@@ -13,44 +13,85 @@ GNU General Public License for more details.
 */
 
 #include "server_list.h"
+#include <event2/util.h>
 #include <algorithm>
 
-void ServerList::CleanupStallServers()
+void ServerList::UpdateState()
 {
-	auto predicate = [](const ServerEntry &entry) {
-		return entry.TimedOut();
-	};
-	auto it = std::remove_if(m_entries.begin(), m_entries.end(), predicate);
-	m_entries.erase(it, m_entries.end());
-	m_entries.shrink_to_fit();
+	CleanupStallServers();
+	RemoveTimeoutChallenges();
 }
 
-void ServerList::Insert(const NetAddress &address)
+ServerEntry &ServerList::Insert(const NetAddress &address)
 {
-	m_entries.emplace_back(address);
+	if (m_serverCountMap.count(address) < 1)
+	{
+		m_serversMap.insert({ address, std::move(ServerEntry(address)) });
+		m_serverCountMap[address] += 1;
+	}
+	return m_serversMap.at(address);
 }
 
 bool ServerList::Contains(const NetAddress &addr) const
 {
-	auto predicate = [&addr](const ServerEntry &entry) {
-		return addr.Equals(entry.GetAddress(), true);
-	};
-	return std::find_if(m_entries.begin(), m_entries.end(), predicate) != std::end(m_entries);
+	return m_serversMap.count(addr) > 0;
 }
 
-ServerEntry *ServerList::FindEntry(const NetAddress &address)
+uint32_t ServerList::GenerateChallenge(const NetAddress &address)
 {
-	auto predicate = [&address](const ServerEntry &entry) {
-		return address.Equals(entry.GetAddress(), true);
-	};
-	auto iter = std::find_if(m_entries.begin(), m_entries.end(), predicate);
-	return iter != std::end(m_entries) ? &(*iter) : nullptr;
+	uint32_t challenge;
+	evutil_secure_rng_get_bytes(&challenge, sizeof(challenge));
+	m_challengeMap.insert({ address, ChallengeEntry(challenge) });
+	return challenge;
 }
 
-size_t ServerList::CountForAddress(const NetAddress &addr) const
+bool ServerList::CheckForChallenge(const NetAddress &address) const
 {
-	auto predicate = [&addr](const ServerEntry &entry) {
-		return addr.Equals(entry.GetAddress(), false);
-	};
-	return std::count_if(m_entries.begin(), m_entries.end(), predicate);
+	return m_challengeMap.count(address) > 0;
+}
+
+bool ServerList::ValidateChallenge(const NetAddress &address, uint32_t challenge) const
+{
+	if (m_challengeMap.count(address) < 1) {
+		return false;
+	}
+	return m_challengeMap.at(address).GetValue() == challenge;
+}
+
+size_t ServerList::GetCountForAddress(const NetAddress &addr) const
+{
+	return m_serverCountMap.at(addr);
+}
+
+void ServerList::CleanupStallServers()
+{
+	for (auto it = m_serversMap.begin(); it != m_serversMap.end();)
+	{
+		const auto &entry = it->second;
+		if (entry.Timeout()) 
+		{
+			m_serverCountMap[entry.GetAddress()] -= 1;
+			m_challengeMap.erase(entry.GetAddress());
+			it = m_serversMap.erase(it);
+		}
+		else {
+			it++;
+		}
+	}
+	// TODO operations to clean up memory that was used for removed elements
+}
+
+void ServerList::RemoveTimeoutChallenges()
+{
+	for (auto it = m_challengeMap.begin(); it != m_challengeMap.end();)
+	{
+		const auto &address = it->first;
+		const auto &entry = it->second;
+		if (m_serversMap.count(address) < 1 && entry.Timeout()) {
+			it = m_challengeMap.erase(it);
+		}
+		else {
+			it++;
+		}
+	}
 }

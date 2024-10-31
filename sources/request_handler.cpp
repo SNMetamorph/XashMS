@@ -88,32 +88,27 @@ void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &source
 
 void RequestHandler::ProcessChallengeRequest(Socket &socket, const NetAddress &sourceAddr)
 {
-	if (m_serverList.CountForAddress(sourceAddr) > ServerList::GetMaxServersForIP()) {
-		return; // too much servers for this IP
+	if (m_serverList.GetCountForAddress(sourceAddr) >= ServerList::GetQuotaPerAddress()) {
+		return; // too much servers for this IP address
 	}
 
-	if (!m_serverList.Contains(sourceAddr)) {
-		m_serverList.Insert(sourceAddr);
-	}
-
-	ServerEntry *entry = m_serverList.FindEntry(sourceAddr);
-	if (entry->ChallengeDelay()) {
-		return; 
+	if (m_serverList.CheckForChallenge(sourceAddr)) {
+		return; // this server already got challenge
 	}
 
 	auto &recvBuffer = socket.GetDataBuffer();
 	BinaryInputStream request(recvBuffer.data(), recvBuffer.size());
-	std::optional<uint32_t> challenge = std::nullopt;
+	std::optional<uint32_t> clientChallenge = std::nullopt;
 
 	if (recvBuffer.size() == 6)
 	{
 		// write for second challenge 
 		request.SkipBytes(2);
-		challenge = request.Read<uint32_t>();
+		clientChallenge = request.Read<uint32_t>();
 	}
 
-	SendChallengeResponse(socket, sourceAddr, entry->GetChallenge(), challenge);
-	entry->ResetChallengeDelay();
+	uint32_t challenge = m_serverList.GenerateChallenge(sourceAddr);
+	SendChallengeResponse(socket, sourceAddr, challenge, clientChallenge);
 }
 
 void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &sourceAddr)
@@ -126,8 +121,7 @@ void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &s
 		return; // invalid request length
 	}
 
-	ServerEntry *entry = m_serverList.FindEntry(sourceAddr);
-	if (!entry) 
+	if (!m_serverList.CheckForChallenge(sourceAddr)) 
 	{
 		fmt::print("Server skipped challenge request: {}:{}\n", sourceAddr.ToString(), sourceAddr.GetPort());
 		return;
@@ -138,32 +132,43 @@ void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &s
 	request.ReadString(infostring);
 	data.Parse(infostring);
 
+	// check for challenge correctness
+	if (!data["challenge"].has_value()) {
+		return; // missing challenge number in infostring
+	}
+	else
+	{
+		uint32_t challengeRecv = std::atoll(data["challenge"].value().c_str());
+		if (!m_serverList.ValidateChallenge(sourceAddr, challengeRecv))
+		{
+			fmt::print("Incorrect challenge from {}:{}: value {}\n", sourceAddr.ToString(), sourceAddr.GetPort(), challengeRecv);
+			return;
+		}
+	}
+
+	// check for request infostring correctness and fullness
 	if (!ValidateAddServerInfostring(data))
 	{
 		fmt::print("Invalid add server query infostring: {}:{}\n", sourceAddr.ToString(), sourceAddr.GetPort());
 		return;
 	}
 
-	entry->Update(data); // TODO validate infostring fullness
-	if (entry->ValidateChallenge()) 
-	{
-		entry->ResetTimeout();
-		fmt::print(entry->IsApproved() ? "Updated " : "Added ");
-		fmt::print("server: {}:{}, game={}/{}, protocol={}, players={}/{}/{}, version={}\n", 
-			sourceAddr.ToString(), 
-			sourceAddr.GetPort(), 
-			entry->GetMapName(), 
-			entry->GetGamedir(), 
-			entry->GetProtocolVersion(),
-			entry->GetPlayersCount(),
-			entry->GetBotsCount(),
-			entry->GetMaxPlayers(),
-			entry->GetClientVersion());
-		entry->Approve();
-	}
-	else {
-		fmt::print("Incorrect challenge from {}:{}: value {}\n", sourceAddr.ToString(), sourceAddr.GetPort(), entry->GetChallenge());
-	}
+	bool serverExists = m_serverList.Contains(sourceAddr);
+	ServerEntry &server = m_serverList.Insert(sourceAddr);
+	server.Update(data); 
+	server.ResetTimeout();
+
+	fmt::print(serverExists ? "Updated " : "Added ");
+	fmt::print("server: {}:{}, game={}/{}, protocol={}, players={}/{}/{}, version={}\n", 
+		sourceAddr.ToString(), 
+		sourceAddr.GetPort(), 
+		server.GetMapName(), 
+		server.GetGamedir(), 
+		server.GetProtocolVersion(),
+		server.GetPlayersCount(),
+		server.GetBotsCount(),
+		server.GetMaxPlayers(),
+		server.GetClientVersion());
 }
 
 void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, InfostringData &data)
@@ -186,12 +191,8 @@ void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &c
 	}
 
 	bool natBypass = data["nat"].value().compare("0") != 0;
-	for (const auto &entry : m_serverList.GetEntriesCollection()) 
+	for (const auto &[serverAddr, entry] : m_serverList.GetEntriesCollection())
 	{
-		auto &serverAddr = entry.GetAddress();
-		if (!entry.ValidateChallenge())
-			continue;
-
 		if (serverAddr.GetAddressFamily() != clientAddr.GetAddressFamily())
 			continue;
 
@@ -289,9 +290,6 @@ bool RequestHandler::ValidateClientQueryInfostring(const InfostringData &data)
 
 bool RequestHandler::ValidateAddServerInfostring(const InfostringData &data)
 {
-	if (!data["challenge"].has_value()) {
-		return false;
-	}
 	if (!data["protocol"].has_value()) {
 		return false;
 	}
