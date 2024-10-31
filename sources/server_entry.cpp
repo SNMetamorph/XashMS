@@ -28,7 +28,7 @@ ServerEntry::ServerEntry(const NetAddress &address) :
 	m_secured(false)
 {
 	m_keepAliveTimer.Reset();
-	m_keepAliveTimer.SetInterval(600.0);
+	m_keepAliveTimer.SetInterval(360.0);
 }
 
 void ServerEntry::Update(InfostringData &data)
