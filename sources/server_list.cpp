@@ -68,10 +68,14 @@ void ServerList::CleanupStallServers()
 	for (auto it = m_serversMap.begin(); it != m_serversMap.end();)
 	{
 		const auto &entry = it->second;
+		const auto &address = entry.GetAddress();
 		if (entry.Timeout()) 
 		{
-			m_serverCountMap[entry.GetAddress()] -= 1;
-			m_challengeMap.erase(entry.GetAddress());
+			m_serverCountMap[address] -= 1;
+			if (m_serverCountMap[address] == 0) {
+				m_serverCountMap.erase(address);
+			}
+			m_challengeMap.erase(address);
 			it = m_serversMap.erase(it);
 		}
 		else {
