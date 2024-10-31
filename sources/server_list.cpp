@@ -39,10 +39,13 @@ bool ServerList::Contains(const NetAddress &addr) const
 
 uint32_t ServerList::GenerateChallenge(const NetAddress &address)
 {
-	uint32_t challenge;
-	evutil_secure_rng_get_bytes(&challenge, sizeof(challenge));
-	m_challengeMap.insert({ address, ChallengeEntry(challenge) });
-	return challenge;
+	if (m_challengeMap.count(address) < 1)
+	{
+		uint32_t challenge;
+		evutil_secure_rng_get_bytes(&challenge, sizeof(challenge));
+		m_challengeMap.insert({ address, ChallengeEntry(challenge) });
+	}
+	return m_challengeMap.at(address).GetValue();
 }
 
 bool ServerList::CheckForChallenge(const NetAddress &address) const
