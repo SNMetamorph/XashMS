@@ -25,10 +25,7 @@ std::optional<ServerAppendRequest> ServerAppendRequest::Parse(BinaryInputStream 
 		return std::nullopt; // invalid request length
 	}
 
-	if (!stream.ReadString(infostring)) {
-		return std::nullopt; // failed to read string
-	}
-
+	stream.ReadString(infostring); // this string in request is not null-terminated
 	data.Parse(infostring);
 	if (!object.ValidateInfostring(data)) {
 		return std::nullopt; // request infostring correctness and fullness check failed
