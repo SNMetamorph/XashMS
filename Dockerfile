@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y \
 RUN groupadd masterserver && useradd -m -g masterserver masterserver
 USER masterserver
 WORKDIR /app
-COPY --chown=masterserver:masterserver --from=build /project/build/bin/Debug .
+COPY --chown=masterserver:masterserver --from=build /project/build/bin/Release .
 EXPOSE 27010/udp
 ENTRYPOINT ["./xash-ms"]
 CMD ["--ip", "0.0.0.0", "--ip6", "::", "--port", "27010"]
