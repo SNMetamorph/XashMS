@@ -24,6 +24,11 @@ public:
 	InfostringData() = default;
 	InfostringData(const std::string &data);
 
+	InfostringData(const InfostringData &data) = default;
+	InfostringData(InfostringData &&data) = default;
+	InfostringData& operator=(InfostringData&&) noexcept = default;
+	InfostringData& operator=(const InfostringData&) noexcept = default;
+
 	void Parse(const std::string &data);
 	void Insert(const char *key, const char *value);
 	void Insert(const std::string &key, const std::string &value);
