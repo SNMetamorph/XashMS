@@ -29,7 +29,7 @@ public:
 	ServerEntry& operator=(ServerEntry&&) = default;
 	ServerEntry& operator=(const ServerEntry&) = default;
 
-	void Update(InfostringData &data);
+	void Update(const InfostringData &data);
 	void ResetTimeout();
 	bool Timeout() const;
 

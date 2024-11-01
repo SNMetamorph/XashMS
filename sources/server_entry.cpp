@@ -31,7 +31,7 @@ ServerEntry::ServerEntry(const NetAddress &address) :
 	m_keepAliveTimer.SetInterval(360.0);
 }
 
-void ServerEntry::Update(InfostringData &data)
+void ServerEntry::Update(const InfostringData &data)
 {
 	m_protocol = std::atoll(data["protocol"].value().c_str());
 	m_players = std::atoll(data["players"].value().c_str());
