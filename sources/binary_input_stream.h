@@ -34,6 +34,8 @@ public:
 	bool SkipString();
 	bool ReadString(std::string &dest);
 	bool EndOfFile() const;
+	size_t GetBufferSize() const;
+	size_t GetPosition() const;
 
 private:
 	size_t ReadBytes(void *destBuffer, size_t count);

@@ -68,6 +68,16 @@ bool BinaryInputStream::EndOfFile() const
 	return (m_bufferSize - m_currentOffset) == 0;
 }
 
+size_t BinaryInputStream::GetBufferSize() const
+{
+	return m_bufferSize;
+}
+
+size_t BinaryInputStream::GetPosition() const
+{
+	return m_currentOffset;
+}
+
 size_t BinaryInputStream::ReadBytes(void *destBuffer, size_t count)
 {
 	size_t remainingBytes = std::min(count, m_bufferSize - m_currentOffset);
