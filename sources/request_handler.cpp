@@ -30,132 +30,79 @@ void RequestHandler::HandlePacket(Socket &socket, const NetAddress &sourceAddr)
 		return; // invalid size packet, ignore it
 	}
 
-	if (std::memcmp(recvBuffer.data(), MasterProtocol::clientQuery, 1) == 0) {
-		ProcessClientQuery(socket, sourceAddr);
+	BinaryInputStream stream(recvBuffer.data(), recvBuffer.size());
+	if (std::memcmp(recvBuffer.data(), MasterProtocol::clientQuery, 1) == 0)
+	{
+		auto request = ClientQueryRequest::Parse(stream);
+		if (request.has_value()) {
+			ProcessClientQuery(socket, sourceAddr, request.value());
+		}
 	}
-	else if (std::memcmp(recvBuffer.data(), MasterProtocol::challengeRequest, 2) == 0) {
-		ProcessChallengeRequest(socket, sourceAddr);
+	else if (std::memcmp(recvBuffer.data(), MasterProtocol::challengeRequest, 2) == 0) 
+	{
+		if (m_serverList.GetCountForAddress(sourceAddr) >= ServerList::GetQuotaPerAddress()) {
+			return; // too much servers for this IP address
+		}
+		else if (m_serverList.CheckForChallenge(sourceAddr)) {
+			return; // this server already got challenge
+		}
+
+		auto request = ServerChallengeRequest::Parse(stream);
+		if (request.has_value()) {
+			ProcessChallengeRequest(socket, sourceAddr, request.value());
+		}
 	}
-	else if (std::memcmp(recvBuffer.data(), MasterProtocol::addServer, 2) == 0) {
-		ProcessAddServerRequest(socket, sourceAddr);
+	else if (std::memcmp(recvBuffer.data(), MasterProtocol::addServer, 2) == 0)
+	{
+		if (!m_serverList.CheckForChallenge(sourceAddr)) 
+		{
+			Utils::Log("Server skipped challenge request: {}:{}\n", sourceAddr.ToString(), sourceAddr.GetPort());
+			return;
+		}
+
+		auto request = ServerAppendRequest::Parse(stream);
+		if (request.has_value()) {
+			ProcessAddServerRequest(socket, sourceAddr, request.value());
+		}
 	}
 }
 
-void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &sourceAddr)
+void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &sourceAddr, ClientQueryRequest &request)
 {
-	auto &recvBuffer = socket.GetDataBuffer();
-	BinaryInputStream request(recvBuffer.data(), recvBuffer.size());
-
-	request.SkipBytes(2); // skip header
-	if (request.EndOfFile()) {
-		return; // invalid request
-	}
-
-	// placeholder addr, ignored
-	if (!request.SkipString()) { 
-		return; 
-	}
-
-	std::string queryInfo;
-	if (!request.ReadString(queryInfo)) {
-		return; 
-	}
-
-	size_t slashPos = queryInfo.find_first_of('\\');
-	if (slashPos == std::string::npos) {
-		return; // invalid query info string
-	}
-
-	InfostringData data(queryInfo);
-	if (!ValidateClientQueryInfostring(data)) {
-		return; // invalid query info, ignore request
-	}
-
-	if (!data["clver"].has_value()) {
-		SendFakeServerInfo(socket, sourceAddr, data);
+	if (request.ClientOutdated()) {
+		SendFakeServerInfo(socket, sourceAddr, request.GetGamedir());
 	}
 	else {
-		SendClientQueryResponse(socket, sourceAddr, data);
+		SendClientQueryResponse(socket, sourceAddr, request);
 	}
 
 	Utils::Log("Client query: {}:{}, gamedir={}, clver={}, nat={}\n", 
 		sourceAddr.ToString(), 
 		sourceAddr.GetPort(), 
-		data["gamedir"].value(),
-		data["clver"].value(),
-		data["nat"].value());
+		request.GetGamedir(),
+		request.GetClientVersion().value_or("unknown"),
+		request.ClientBypassingNat() ? 1 : 0);
 }
 
-void RequestHandler::ProcessChallengeRequest(Socket &socket, const NetAddress &sourceAddr)
+void RequestHandler::ProcessChallengeRequest(Socket &socket, const NetAddress &sourceAddr, ServerChallengeRequest &request)
 {
-	if (m_serverList.GetCountForAddress(sourceAddr) >= ServerList::GetQuotaPerAddress()) {
-		return; // too much servers for this IP address
-	}
-
-	if (m_serverList.CheckForChallenge(sourceAddr)) {
-		return; // this server already got challenge
-	}
-
-	auto &recvBuffer = socket.GetDataBuffer();
-	BinaryInputStream request(recvBuffer.data(), recvBuffer.size());
-	std::optional<uint32_t> clientChallenge = std::nullopt;
-
-	if (recvBuffer.size() == 6)
-	{
-		// write for second challenge 
-		request.SkipBytes(2);
-		clientChallenge = request.Read<uint32_t>();
-	}
-
+	std::optional<uint32_t> clientChallenge = request.GetClientChallenge();
 	uint32_t challenge = m_serverList.GenerateChallenge(sourceAddr);
 	SendChallengeResponse(socket, sourceAddr, challenge, clientChallenge);
 }
 
-void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &sourceAddr)
+void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &sourceAddr, ServerAppendRequest &request)
 {
-	auto &recvBuffer = socket.GetDataBuffer();
-	BinaryInputStream request(recvBuffer.data(), recvBuffer.size());
-
-	request.SkipBytes(2); // skip header bytes
-	if (request.EndOfFile()) {
-		return; // invalid request length
-	}
-
-	if (!m_serverList.CheckForChallenge(sourceAddr)) 
+	uint32_t challengeRecv = request.GetChallenge();
+	if (!m_serverList.ValidateChallenge(sourceAddr, challengeRecv))
 	{
-		Utils::Log("Server skipped challenge request: {}:{}\n", sourceAddr.ToString(), sourceAddr.GetPort());
-		return;
-	}
-
-	std::string infostring;
-	InfostringData data;
-	request.ReadString(infostring);
-	data.Parse(infostring);
-
-	// check for challenge correctness
-	if (!data["challenge"].has_value()) {
-		return; // missing challenge number in infostring
-	}
-	else
-	{
-		uint32_t challengeRecv = std::atoll(data["challenge"].value().c_str());
-		if (!m_serverList.ValidateChallenge(sourceAddr, challengeRecv))
-		{
-			Utils::Log("Incorrect challenge from {}:{}: value {}\n", sourceAddr.ToString(), sourceAddr.GetPort(), challengeRecv);
-			return;
-		}
-	}
-
-	// check for request infostring correctness and fullness
-	if (!ValidateAddServerInfostring(data))
-	{
-		Utils::Log("Invalid add server query infostring: {}:{}\n", sourceAddr.ToString(), sourceAddr.GetPort());
+		Utils::Log("Incorrect challenge from {}:{}: value {}\n", sourceAddr.ToString(), sourceAddr.GetPort(), challengeRecv);
 		return;
 	}
 
 	bool serverExists = m_serverList.Contains(sourceAddr);
 	ServerEntry &server = m_serverList.Insert(sourceAddr);
-	server.Update(data); 
+	server.Update(request.GetInfostringData()); 
 	server.ResetTimeout();
 
 	Utils::Log(serverExists ? "Updated " : "Added ");
@@ -171,26 +118,22 @@ void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &s
 		server.GetClientVersion());
 }
 
-void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, InfostringData &data)
+void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, ClientQueryRequest &request)
 {
 	std::vector<uint8_t> buffer;
 	BinaryOutputStream response(buffer);
+	auto queryKey = request.GetQueryKey();
 
 	response.WriteString(MasterProtocol::queryPacketHeader);
-	if (data["key"].has_value())
+	if (queryKey.has_value())
 	{
-		try {
-			uint32_t queryKey = std::stoi(data["key"].value(), nullptr, 16);
-			response.WriteByte(0x7F);
-			response.Write<uint32_t>(queryKey);
-			response.WriteByte(0x00);
-		}
-		catch (const std::exception &ex) {
-			return; // invalid data in query key
-		}
+		response.WriteByte(0x7F);
+		response.Write<uint32_t>(queryKey.value());
+		response.WriteByte(0x00);
 	}
 
-	bool natBypass = data["nat"].value().compare("0") != 0;
+	bool natBypass = request.ClientBypassingNat();
+	auto clientProtocol = request.GetProtocolVersion();
 	for (const auto &[serverAddr, entry] : m_serverList.GetEntriesCollection())
 	{
 		if (serverAddr.GetAddressFamily() != clientAddr.GetAddressFamily())
@@ -199,13 +142,12 @@ void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &c
 		if (entry.NatBypassEnabled() != natBypass)
 			continue;
 
-		if (data["gamedir"].value().compare(entry.GetGamedir()) != 0)
+		if (request.GetGamedir().compare(entry.GetGamedir()) != 0)
 			continue;
 
-		if (data["protocol"].has_value())
+		if (clientProtocol.has_value())
 		{
-			uint32_t clientProtocol = std::atoi(data["protocol"].value().c_str());
-			if (entry.GetProtocolVersion() != clientProtocol) {
+			if (entry.GetProtocolVersion() != clientProtocol.value()) {
 				continue;
 			}
 		}
@@ -234,7 +176,7 @@ void RequestHandler::SendChallengeResponse(Socket &socket, const NetAddress &des
 	socket.SendTo(dest, buffer);
 }
 
-void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, InfostringData &infostringData)
+void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, const std::string &gamedir)
 {
 	std::vector<uint8_t> data;
 	BinaryOutputStream response(data);
@@ -248,7 +190,7 @@ void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, 
 		infostring.Insert("coop", "0");
 		infostring.Insert("numcl", "32");
 		infostring.Insert("maxcl", "32");
-		infostring.Insert("gamedir", infostringData["gamedir"].value());
+		infostring.Insert("gamedir", gamedir);
 
 		data.clear();
 		response.WriteString(MasterProtocol::fakeServerInfoHeader);
@@ -275,65 +217,4 @@ void RequestHandler::SendNatBypassNotify(Socket &socket, const NetAddress &dest,
 	natBypassPacket.WriteString(MasterProtocol::natBypassPacketHeader);
 	natBypassPacket.WriteBytes(addrString.c_str(), addrString.size());
 	socket.SendTo(dest, tempBuffer);
-}
-
-bool RequestHandler::ValidateClientQueryInfostring(const InfostringData &data)
-{
-	if (!data["gamedir"].has_value()) {
-		return false;
-	}
-	if (!data["nat"].has_value()) {
-		return false;
-	}
-	return true;
-}
-
-bool RequestHandler::ValidateAddServerInfostring(const InfostringData &data)
-{
-	if (!data["protocol"].has_value()) {
-		return false;
-	}
-	if (!data["players"].has_value()) {
-		return false;
-	}
-	if (!data["max"].has_value()) {
-		return false;
-	}
-	if (!data["bots"].has_value()) {
-		return false;
-	}
-	if (!data["region"].has_value()) {
-		return false;
-	}
-	if (!data["gamedir"].has_value()) {
-		return false;
-	}
-	if (!data["map"].has_value()) {
-		return false;
-	}
-	if (!data["version"].has_value()) {
-		return false;
-	}
-	if (!data["os"].has_value()) {
-		return false;
-	}
-	if (!data["product"].has_value()) {
-		return false;
-	}
-	if (!data["type"].has_value()) {
-		return false;
-	}
-	if (!data["password"].has_value()) {
-		return false;
-	}
-	if (!data["secure"].has_value()) {
-		return false;
-	}
-	if (!data["lan"].has_value()) {
-		return false;
-	}
-	if (!data["nat"].has_value()) {
-		return false;
-	}
-	return true;
 }

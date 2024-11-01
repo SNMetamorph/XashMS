@@ -17,6 +17,9 @@ GNU General Public License for more details.
 #include "net_address.h"
 #include "infostring_data.h"
 #include "server_list.h"
+#include "client_query_request.h"
+#include "server_challenge_request.h"
+#include "server_append_request.h"
 #include <optional>
 #include <unordered_map>
 #include <string>
@@ -28,17 +31,14 @@ public:
 	void HandlePacket(Socket &socket, const NetAddress &sourceAddr);
 
 private:
-	void ProcessClientQuery(Socket &socket, const NetAddress &sourceAddr);
-	void ProcessChallengeRequest(Socket &socket, const NetAddress &sourceAddr);
-	void ProcessAddServerRequest(Socket &socket, const NetAddress &sourceAddr);
+	void ProcessClientQuery(Socket &socket, const NetAddress &sourceAddr, ClientQueryRequest &req);
+	void ProcessChallengeRequest(Socket &socket, const NetAddress &sourceAddr, ServerChallengeRequest &req);
+	void ProcessAddServerRequest(Socket &socket, const NetAddress &sourceAddr, ServerAppendRequest &req);
 
-	void SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, InfostringData &data);
+	void SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, ClientQueryRequest &req);
 	void SendChallengeResponse(Socket &socket, const NetAddress &dest, uint32_t ch1, std::optional<uint32_t> ch2);
-	void SendFakeServerInfo(Socket &socket, const NetAddress &dest, InfostringData &data);
+	void SendFakeServerInfo(Socket &socket, const NetAddress &dest, const std::string &gamedir);
 	void SendNatBypassNotify(Socket &socket, const NetAddress &dest, const NetAddress &client);
-
-	bool ValidateClientQueryInfostring(const InfostringData &data);
-	bool ValidateAddServerInfostring(const InfostringData &data);
 
 	ServerList &m_serverList;
 };

@@ -24,11 +24,15 @@ list(APPEND FILE_SOURCES
 	"sources/request_handler.cpp"
 	"sources/binary_input_stream.cpp"
 	"sources/binary_output_stream.cpp"
+	"sources/request_types/client_query_request.cpp"
+	"sources/request_types/server_challenge_request.cpp"
+	"sources/request_types/server_append_request.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${FILE_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE 
 	"sources"
+	"sources/request_types"
 )
 
 if(MSVC)
