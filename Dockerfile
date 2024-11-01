@@ -16,8 +16,8 @@ RUN ./external/vcpkg/bootstrap-vcpkg.sh
 
 RUN cmake -E make_directory ./build
 WORKDIR /project/build
-RUN cmake .. --preset linux-x64-debug && \
-    cmake --build . --config Debug
+RUN cmake .. --preset linux-x64-release && \
+    cmake --build . 
 
 FROM debian:bookworm-slim AS final
 RUN apt-get update && apt-get install -y \
