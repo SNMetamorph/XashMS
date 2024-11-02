@@ -132,6 +132,9 @@ void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &c
 		response.WriteByte(0x00);
 	}
 
+	// TODO implement pagination mechanism to bypass MTU limit, when servers count are huge
+	// but for November 2024, engine still does not supports such mechanism
+	// for more information see CL_ServerList function in engine sources
 	bool natBypass = request.ClientBypassingNat();
 	auto clientProtocol = request.GetProtocolVersion();
 	for (const auto &[serverAddr, entry] : m_serverList.GetEntriesCollection())
