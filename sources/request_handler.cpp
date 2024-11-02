@@ -31,14 +31,14 @@ void RequestHandler::HandlePacket(Socket &socket, const NetAddress &sourceAddr)
 	}
 
 	BinaryInputStream stream(recvBuffer.data(), recvBuffer.size());
-	if (std::memcmp(recvBuffer.data(), MasterProtocol::clientQuery, 1) == 0)
+	if (std::memcmp(recvBuffer.data(), ClientQueryRequest::Header, 1) == 0)
 	{
 		auto request = ClientQueryRequest::Parse(stream);
 		if (request.has_value()) {
 			ProcessClientQuery(socket, sourceAddr, request.value());
 		}
 	}
-	else if (std::memcmp(recvBuffer.data(), MasterProtocol::challengeRequest, 2) == 0) 
+	else if (std::memcmp(recvBuffer.data(), ServerChallengeRequest::Header, 2) == 0) 
 	{
 		if (m_serverList.GetCountForAddress(sourceAddr) >= ServerList::GetQuotaPerAddress()) {
 			return; // too much servers for this IP address
@@ -52,7 +52,7 @@ void RequestHandler::HandlePacket(Socket &socket, const NetAddress &sourceAddr)
 			ProcessChallengeRequest(socket, sourceAddr, request.value());
 		}
 	}
-	else if (std::memcmp(recvBuffer.data(), MasterProtocol::addServer, 2) == 0)
+	else if (std::memcmp(recvBuffer.data(), ServerAppendRequest::Header, 2) == 0)
 	{
 		if (!m_serverList.CheckForChallenge(sourceAddr)) 
 		{

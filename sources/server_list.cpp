@@ -66,20 +66,26 @@ size_t ServerList::GetCountForAddress(const NetAddress &addr) const
 	return (m_serverCountMap.count(addr) < 1) ? 0 : m_serverCountMap.at(addr);
 }
 
+void ServerList::Remove(const NetAddress &address)
+{
+	m_serverCountMap[address] -= 1;
+	if (m_serverCountMap[address] == 0) {
+		m_serverCountMap.erase(address);
+	}
+	m_challengeMap.erase(address);
+	m_serversMap.erase(address);
+}
+
 void ServerList::CleanupStallServers()
 {
 	for (auto it = m_serversMap.begin(); it != m_serversMap.end();)
 	{
 		const auto &entry = it->second;
-		const auto &address = entry.GetAddress();
 		if (entry.Timeout()) 
 		{
-			m_serverCountMap[address] -= 1;
-			if (m_serverCountMap[address] == 0) {
-				m_serverCountMap.erase(address);
-			}
-			m_challengeMap.erase(address);
-			it = m_serversMap.erase(it);
+			auto address = it->first;
+			it = it++; // increment iterator before it will be invalidated
+			Remove(address);
 		}
 		else {
 			it++;
@@ -92,7 +98,6 @@ void ServerList::RemoveTimeoutChallenges()
 {
 	for (auto it = m_challengeMap.begin(); it != m_challengeMap.end();)
 	{
-		const auto &address = it->first;
 		const auto &entry = it->second;
 		if (entry.Timeout()) {
 			it = m_challengeMap.erase(it);

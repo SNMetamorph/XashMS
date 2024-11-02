@@ -31,6 +31,8 @@ public:
 	std::optional<uint32_t> GetProtocolVersion() const { return m_protocolVersion; }
 	std::optional<std::string> GetClientVersion() const { return m_clientVersion; }
 
+	static constexpr const char *Header = "1";
+
 private:
 	ClientQueryRequest() = default;
 

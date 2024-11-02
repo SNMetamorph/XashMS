@@ -25,6 +25,8 @@ public:
 
 	std::optional<uint32_t> GetClientChallenge() const { return m_clientChallenge; }
 
+	static constexpr const char *Header = "q\xff";
+
 private:
 	ServerChallengeRequest() = default;
 

@@ -27,6 +27,8 @@ public:
 	uint32_t GetChallenge() const { return m_challenge; }
 	const InfostringData &GetInfostringData() const { return m_infostringData; }
 
+	static constexpr const char *Header = "0\n";
+
 private:
 	ServerAppendRequest() = default;
 

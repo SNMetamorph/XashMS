@@ -57,6 +57,7 @@ private:
 		Timer m_occupancyTimer;
 	};
 
+	void Remove(const NetAddress &address);
 	void CleanupStallServers();
 	void RemoveTimeoutChallenges();
 
