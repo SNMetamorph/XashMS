@@ -45,7 +45,7 @@ public:
 	NetAddress(const NetAddress&) = default;
 	NetAddress(NetAddress&&) noexcept = default;
 	NetAddress &operator=(const NetAddress&) = default;
-	NetAddress &operator=(NetAddress&&) = default;
+	NetAddress &operator=(NetAddress&&) noexcept = default;
 	bool operator==(const NetAddress &rhs) const;
 
 	uint16_t GetPort() const { return m_port; }
