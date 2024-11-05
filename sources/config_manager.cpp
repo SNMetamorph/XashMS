@@ -12,21 +12,18 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 */
 
-#pragma once
-#include "socket.h"
 #include "config_manager.h"
-#include <memory>
+#include <iostream>
+#include <fstream>
 
-class EventLoop
+bool ConfigManager::ParseConfig(const std::filesystem::path &configPath)
 {
-public:
-	EventLoop(std::shared_ptr<Socket> socketIPv4, 
-		std::shared_ptr<Socket> socketIPv6, 
-		std::shared_ptr<ConfigManager> configManager);
-	~EventLoop();
-
-	void Run();
-
-	struct Impl;
-	std::unique_ptr<Impl> m_impl;
-};
+	std::ifstream fileStream(configPath);
+	if (fileStream.is_open()) 
+	{
+		std::string jsonData;
+		jsonData.assign(std::istreambuf_iterator<char>(fileStream), std::istreambuf_iterator<char>());
+		return m_configData.Parse(jsonData);
+	}
+	return false;
+}

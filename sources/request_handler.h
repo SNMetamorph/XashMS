@@ -16,6 +16,7 @@ GNU General Public License for more details.
 #include "socket.h"
 #include "net_address.h"
 #include "infostring_data.h"
+#include "config_manager.h"
 #include "server_list.h"
 #include "client_query_request.h"
 #include "server_challenge_request.h"
@@ -27,7 +28,7 @@ GNU General Public License for more details.
 class RequestHandler
 {
 public:
-	RequestHandler(ServerList &serverList);
+	RequestHandler(ServerList &serverList, ConfigManager &configManager);
 	void HandlePacket(Socket &socket, const NetAddress &sourceAddr);
 
 private:
@@ -41,4 +42,5 @@ private:
 	void SendNatBypassNotify(Socket &socket, const NetAddress &dest, const NetAddress &client);
 
 	ServerList &m_serverList;
+	ConfigManager &m_configManager;
 };

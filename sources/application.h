@@ -16,8 +16,8 @@ GNU General Public License for more details.
 #include <argparse/argparse.hpp>
 #include "socket.h"
 #include "event_loop.h"
+#include "config_manager.h"
 #include <memory>
-
 
 class Application
 {
@@ -34,5 +34,6 @@ private:
 	argparse::ArgumentParser m_argsParser;
 	std::shared_ptr<Socket> m_socketInet;
 	std::shared_ptr<Socket> m_socketInet6;
+	std::shared_ptr<ConfigManager> m_configManager;
 	std::unique_ptr<EventLoop> m_eventLoop;
 };

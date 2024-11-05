@@ -16,6 +16,11 @@ GNU General Public License for more details.
 #include <event2/util.h>
 #include <algorithm>
 
+ServerList::ServerList(ConfigManager &configManager) : 
+	m_configManager(configManager)
+{
+}
+
 void ServerList::UpdateState()
 {
 	CleanupStallServers();
@@ -81,7 +86,7 @@ void ServerList::CleanupStallServers()
 	for (auto it = m_serversMap.begin(); it != m_serversMap.end();)
 	{
 		const auto &entry = it->second;
-		if (entry.Timeout()) 
+		if (entry.Timeout(m_configManager.GetData().GetServerTimeoutInterval())) 
 		{
 			auto address = it->first;
 			it = it++; // increment iterator before it will be invalidated
@@ -99,7 +104,7 @@ void ServerList::RemoveTimeoutChallenges()
 	for (auto it = m_challengeMap.begin(); it != m_challengeMap.end();)
 	{
 		const auto &entry = it->second;
-		if (entry.Timeout()) {
+		if (entry.Timeout(m_configManager.GetData().GetChallengeTimeoutInterval())) {
 			it = m_challengeMap.erase(it);
 		}
 		else {

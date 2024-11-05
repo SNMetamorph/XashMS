@@ -17,14 +17,14 @@ GNU General Public License for more details.
 
 Timer::Timer() :
 	m_interval(1.0),
-	m_lastTick(0.0)
+	m_timePoint(0.0)
 {
 }
 
 void Timer::Reset()
 {
 	auto duration = std::chrono::steady_clock::now().time_since_epoch();
-	m_lastTick = std::chrono::duration<double>(duration).count();
+	m_timePoint = std::chrono::duration<double>(duration).count();
 }
 
 void Timer::SetInterval(double interval)
@@ -36,5 +36,12 @@ bool Timer::CycleElapsed() const
 {
 	auto duration = std::chrono::steady_clock::now().time_since_epoch();
 	double currentTime = std::chrono::duration<double>(duration).count();
-	return currentTime > (m_lastTick + m_interval);
+	return currentTime > (m_timePoint + m_interval);
+}
+
+bool Timer::IntervalElapsed(double interval) const
+{
+	auto duration = std::chrono::steady_clock::now().time_since_epoch();
+	double currentTime = std::chrono::duration<double>(duration).count();
+	return currentTime > (m_timePoint + interval);
 }

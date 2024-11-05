@@ -65,10 +65,15 @@ int Application::Run(int argc, char *argv[])
 		InitializeSocketInet6();
 	}
 
+	m_configManager = std::make_shared<ConfigManager>();
+	if (m_configManager->ParseConfig(m_argsParser.get<std::string>("--config-file"))) {
+		Utils::Log("Configuration file loaded\n");
+	}
+
 	if (m_socketInet || m_socketInet6) 
 	{
 		Utils::Log("Starting listening for requests...\n");
-		m_eventLoop = std::make_unique<EventLoop>(m_socketInet, m_socketInet6);
+		m_eventLoop = std::make_unique<EventLoop>(m_socketInet, m_socketInet6, m_configManager);
 		m_eventLoop->Run();
 		Utils::Log("Shutting down...\n");
 	}
@@ -110,6 +115,10 @@ void Application::InitializeProgramArguments()
 	m_argsParser.add_argument("-u", "--unbuffered")
 		.help("force stdout and stderr streams to be unbuffered")
 		.flag();
+
+	m_argsParser.add_argument("-cfg", "--config-file")
+		.help("configuration file path")
+		.default_value("config.json");
 }
 
 void Application::InitializeSocketInet()

@@ -21,8 +21,9 @@ public:
 	void Reset();
 	void SetInterval(double interval);
 	bool CycleElapsed() const;
+	bool IntervalElapsed(double interval) const;
 
 private:
 	double m_interval;
-	double m_lastTick;
+	double m_timePoint;
 };

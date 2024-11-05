@@ -15,6 +15,8 @@ list(APPEND FILE_SOURCES
 	"sources/main.cpp"
 	"sources/timer.cpp"
 	"sources/socket.cpp"
+	"sources/config_manager.cpp"
+	"sources/config_data.cpp"
 	"sources/server_list.cpp"
 	"sources/server_entry.cpp"
 	"sources/event_loop.cpp"

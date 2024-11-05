@@ -28,7 +28,6 @@ ServerEntry::ServerEntry(const NetAddress &address) :
 	m_secured(false)
 {
 	m_keepAliveTimer.Reset();
-	m_keepAliveTimer.SetInterval(360.0);
 }
 
 void ServerEntry::Update(const InfostringData &data)
@@ -56,7 +55,7 @@ void ServerEntry::ResetTimeout()
 	m_keepAliveTimer.Reset();
 }
 
-bool ServerEntry::Timeout() const
+bool ServerEntry::Timeout(double interval) const
 {
-	return m_keepAliveTimer.CycleElapsed();
+	return m_keepAliveTimer.IntervalElapsed(interval);
 }

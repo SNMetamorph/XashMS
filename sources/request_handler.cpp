@@ -18,8 +18,9 @@ GNU General Public License for more details.
 #include "binary_output_stream.h"
 #include "utils.h"
 
-RequestHandler::RequestHandler(ServerList &serverList) :
-	m_serverList(serverList)
+RequestHandler::RequestHandler(ServerList &serverList, ConfigManager &configManager) :
+	m_serverList(serverList),
+	m_configManager(configManager)
 {
 }
 
@@ -40,7 +41,7 @@ void RequestHandler::HandlePacket(Socket &socket, const NetAddress &sourceAddr)
 	}
 	else if (std::memcmp(recvBuffer.data(), ServerChallengeRequest::Header, 2) == 0) 
 	{
-		if (m_serverList.GetCountForAddress(sourceAddr) >= ServerList::GetQuotaPerAddress()) {
+		if (m_serverList.GetCountForAddress(sourceAddr) >= m_configManager.GetData().GetServerCountQuota()) {
 			return; // too much servers for this IP address
 		}
 		else if (m_serverList.CheckForChallenge(sourceAddr)) {

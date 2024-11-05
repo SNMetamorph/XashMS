@@ -23,7 +23,9 @@ GNU General Public License for more details.
 struct EventLoop::Impl
 {
 public:
-	Impl(std::shared_ptr<Socket> socketInet, std::shared_ptr<Socket> socketInet6);
+	Impl(std::shared_ptr<Socket> socketInet, 
+		std::shared_ptr<Socket> socketInet6, 
+		std::shared_ptr<ConfigManager> configManager);
 
 	void Run();
 	void RecvInetCallback();
@@ -38,6 +40,7 @@ private:
 
 	std::shared_ptr<Socket> m_socketInet;
 	std::shared_ptr<Socket> m_socketInet6;
+	std::shared_ptr<ConfigManager> m_configManager;
 	std::unique_ptr<ServerList> m_serverList;
 	std::unique_ptr<RequestHandler> m_requestHandler;
 	std::unique_ptr<ev::EventBase> m_eventBase;
@@ -48,11 +51,14 @@ private:
 	std::unique_ptr<ev::Event> m_sigintSignalEvent;
 };
 
-EventLoop::Impl::Impl(std::shared_ptr<Socket> socketInet, std::shared_ptr<Socket> socketInet6) :
+EventLoop::Impl::Impl(std::shared_ptr<Socket> socketInet, 
+	std::shared_ptr<Socket> socketInet6,
+	std::shared_ptr<ConfigManager> configManager) :
 	m_socketInet(socketInet),
 	m_socketInet6(socketInet6),
-	m_serverList(std::make_unique<ServerList>()),
-	m_requestHandler(std::make_unique<RequestHandler>(*m_serverList)),
+	m_configManager(configManager),
+	m_serverList(std::make_unique<ServerList>(*configManager)),
+	m_requestHandler(std::make_unique<RequestHandler>(*m_serverList, *configManager)),
 	m_eventBase(std::make_unique<ev::EventBase>())
 {
 	evutil_secure_rng_init();
@@ -66,9 +72,11 @@ EventLoop::Impl::Impl(std::shared_ptr<Socket> socketInet, std::shared_ptr<Socket
 	InitSignalsEvents();
 }
 
-EventLoop::EventLoop(std::shared_ptr<Socket> socketInet, std::shared_ptr<Socket> socketInet6)
+EventLoop::EventLoop(std::shared_ptr<Socket> socketInet, 
+	std::shared_ptr<Socket> socketInet6, 
+	std::shared_ptr<ConfigManager> configManager)
 {
-	m_impl = std::make_unique<Impl>(socketInet, socketInet6);
+	m_impl = std::make_unique<Impl>(socketInet, socketInet6, configManager);
 }
 
 EventLoop::~EventLoop()
@@ -126,7 +134,7 @@ void EventLoop::Impl::InitCleanupTimerEvent()
 		impl->CleanupTimerCallback();
 	};
 
-	timeval timerInterval = { 10, 0 };
+	timeval timerInterval = { m_configManager->GetData().GetCleanupInterval(), 0};
 	m_cleanupTimerEvent = std::make_unique<ev::Event>(
 		*m_eventBase, 
 		-1, 

@@ -13,20 +13,19 @@ GNU General Public License for more details.
 */
 
 #pragma once
-#include "socket.h"
-#include "config_manager.h"
-#include <memory>
+#include "config_data.h"
+#include <string>
+#include <filesystem>
 
-class EventLoop
+class ConfigManager
 {
 public:
-	EventLoop(std::shared_ptr<Socket> socketIPv4, 
-		std::shared_ptr<Socket> socketIPv6, 
-		std::shared_ptr<ConfigManager> configManager);
-	~EventLoop();
+	ConfigManager() = default;
+	~ConfigManager() = default;
 
-	void Run();
+	bool ParseConfig(const std::filesystem::path &configPath);
+	const ConfigData& GetData() const { return m_configData; }
 
-	struct Impl;
-	std::unique_ptr<Impl> m_impl;
+private:
+	ConfigData m_configData;
 };
