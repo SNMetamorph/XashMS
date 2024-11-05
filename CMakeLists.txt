@@ -68,6 +68,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE argparse::argparse)
 find_package(Libevent CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE libevent::core libevent::extra)
 
+find_package(RapidJSON CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE rapidjson)
+
 if(BUILD_WIN32)
 	target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32)
 endif()

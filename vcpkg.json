@@ -6,6 +6,7 @@
   "dependencies": [
     { "name": "fmt", "version>=": "10.2.1#2" },
     { "name": "argparse", "version>=": "3.0" },
-    { "name": "libevent", "version>=": "2.1.12+20230128#0" }
+    { "name": "libevent", "version>=": "2.1.12+20230128#0" },
+    { "name": "rapidjson", "version>=": "2023-07-17#1" }
   ]
 }
