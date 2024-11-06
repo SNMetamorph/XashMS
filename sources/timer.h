@@ -27,3 +27,19 @@ private:
 	double m_interval;
 	double m_timePoint;
 };
+
+template<class T> 
+class Expirable
+{
+public:
+	Expirable(const T& object) : m_value(object) { m_expirationTimer.Reset(); }
+	Expirable(T&& object) : m_value(std::move(object)) { m_expirationTimer.Reset(); }
+
+	T& GetValue() { return m_value; }
+	const T& GetValue() const { return m_value; }
+	bool Expired(double interval) const { return m_expirationTimer.IntervalElapsed(interval); }
+
+private:
+	T m_value;
+	Timer m_expirationTimer;
+};
