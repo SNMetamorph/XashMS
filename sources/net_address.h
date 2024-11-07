@@ -18,6 +18,7 @@ GNU General Public License for more details.
 #include <string>
 #include <string_view>
 #include <array>
+#include <optional>
 #include <utility>
 
 #if BUILD_WIN32 == 1
@@ -60,6 +61,8 @@ public:
 	void FromSockadr(const sockaddr_in *address);
 	void FromSockadr(const sockaddr_in6 *address);
 
+	static std::optional<NetAddress> Parse(const char *address, uint16_t port = 0);
+
 private:
 	uint16_t m_port;
 	AddressFamily m_family;
@@ -70,20 +73,20 @@ class NetAddressHash
 {
 public:
 	std::size_t operator()(const NetAddress &address) const noexcept
-    {
+	{
 		std::size_t addrSize = address.GetAddressSpan().second;
 		return std::hash<std::string_view>{}({ reinterpret_cast<const char*>(address.m_addressData.data()), addrSize });
-    }
+	}
 };
 
 class NetAddressPortHash
 {
 public:
 	std::size_t operator()(const NetAddress &address) const noexcept
-    {
+	{
 		std::size_t addrSize = address.GetAddressSpan().second;
-        std::size_t addrHash = std::hash<std::string_view>{}({ reinterpret_cast<const char*>(address.m_addressData.data()), addrSize });
-        std::size_t portHash = std::hash<uint16_t>{}(address.m_port);
-        return addrHash ^ (portHash << 1);
-    }
+		std::size_t addrHash = std::hash<std::string_view>{}({ reinterpret_cast<const char*>(address.m_addressData.data()), addrSize });
+		std::size_t portHash = std::hash<uint16_t>{}(address.m_port);
+		return addrHash ^ (portHash << 1);
+	}
 };

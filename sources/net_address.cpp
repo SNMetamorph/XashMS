@@ -134,3 +134,24 @@ void NetAddress::FromSockadr(const sockaddr_in6 *address)
 		throw std::runtime_error("sockaddr address family mismatching");
 	}
 }
+
+std::optional<NetAddress> NetAddress::Parse(const char *address, uint16_t port)
+{
+	in_addr addr_v4;
+	in6_addr addr_v6;
+	if (evutil_inet_pton(AF_INET, address, &addr_v4)) 
+	{
+		NetAddress result(AddressFamily::IPv4);
+		std::memcpy(result.m_addressData.data(), &addr_v4, 4);
+		result.m_port = port;
+		return result;
+	}
+	else if (evutil_inet_pton(AF_INET6, address, &addr_v6)) 
+	{
+		NetAddress result(AddressFamily::IPv6);
+		std::memcpy(result.m_addressData.data(), &addr_v6, 16);
+		result.m_port = port;
+		return result;
+	}
+	return std::nullopt;
+}
