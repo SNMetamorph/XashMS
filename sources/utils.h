@@ -15,9 +15,13 @@ GNU General Public License for more details.
 #pragma once
 #include <fmt/core.h>
 #include <cstdio>
+#include <vector>
+#include <string_view>
 
 namespace Utils
 {
+	std::vector<std::string_view> Tokenize(std::string_view input, std::string_view token);
+
 	template<typename... T> void Log(fmt::format_string<T...> fmt, T&&... args) 
 	{
 		fmt::print(fmt, std::forward<T>(args)...);
