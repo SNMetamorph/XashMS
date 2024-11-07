@@ -26,7 +26,7 @@ public:
 	ServerEntry(const NetAddress &address);
 	ServerEntry(const ServerEntry&) = default;
 	ServerEntry(ServerEntry&&) noexcept = default;
-	ServerEntry& operator=(ServerEntry&&) = default;
+	ServerEntry& operator=(ServerEntry&&) noexcept = default;
 	ServerEntry& operator=(const ServerEntry&) = default;
 
 	void Update(const InfostringData &data);
