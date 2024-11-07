@@ -19,27 +19,39 @@ GNU General Public License for more details.
 BinaryInputStream::BinaryInputStream(const void *address, size_t dataSize) :
 	m_bufferAddress(reinterpret_cast<const uint8_t*>(address)),
 	m_bufferSize(dataSize),
-	m_currentOffset(0)
+	m_currentOffset(0),
+	m_underflowFlag(false)
 {
 }
 
-size_t BinaryInputStream::SkipBytes(size_t count)
+bool BinaryInputStream::SkipBytes(size_t count)
 {
-	size_t remainingBytes = std::min(count, m_bufferSize - m_currentOffset);
-	m_currentOffset += remainingBytes;
-	return remainingBytes;
+	size_t remainingBytes = m_bufferSize - m_currentOffset;
+	if (remainingBytes >= count) {
+		m_currentOffset += count;
+		return true;
+	}
+	m_underflowFlag = true;
+	return false;
 }
 
 bool BinaryInputStream::SkipString()
 {
 	size_t remainingBytes = m_bufferSize - m_currentOffset;
-	for (size_t i = 0; i < remainingBytes; i++)
+	if (remainingBytes > 0)
 	{
-		char character;
-		ReadBytes(&character, sizeof(character));
-		if (character == '\0') {
-			return true;
+		for (size_t i = 0; i < remainingBytes; i++)
+		{
+			char character;
+			ReadData(&character, sizeof(character));
+			if (character == '\0') {
+				break;
+			}
 		}
+		return true;
+	}
+	else {
+		m_underflowFlag = true;
 	}
 	return false;
 }
@@ -49,16 +61,37 @@ bool BinaryInputStream::ReadString(std::string &dest)
 	dest.clear();
 	dest.reserve(16);
 	size_t remainingBytes = m_bufferSize - m_currentOffset;
-	for (size_t i = 0; i < remainingBytes; i++)
+	if (remainingBytes > 0)
 	{
-		char character;
-		ReadBytes(&character, sizeof(character));
-		if (character != '\0') {
-			dest.push_back(character);
+		for (size_t i = 0; i < remainingBytes; i++)
+		{
+			char character;
+			ReadData(&character, sizeof(character));
+			if (character != '\0') {
+				dest.push_back(character);
+			}
+			else {
+				break;
+			}
 		}
-		else {
-			return true;
-		}
+		return true;
+	}
+	else {
+		m_underflowFlag = true;
+	}
+	return false;
+}
+
+bool BinaryInputStream::ReadBytes(void *destBuffer, size_t count)
+{
+	size_t remainingBytes = m_bufferSize - m_currentOffset;
+	if (remainingBytes >= count) 
+	{
+		ReadData(destBuffer, count);
+		return true;
+	}
+	else {
+		m_underflowFlag = true;
 	}
 	return false;
 }
@@ -66,6 +99,11 @@ bool BinaryInputStream::ReadString(std::string &dest)
 bool BinaryInputStream::EndOfFile() const
 {
 	return (m_bufferSize - m_currentOffset) == 0;
+}
+
+bool BinaryInputStream::Underflowed() const
+{
+	return m_underflowFlag;
 }
 
 size_t BinaryInputStream::GetBufferSize() const
@@ -78,7 +116,7 @@ size_t BinaryInputStream::GetPosition() const
 	return m_currentOffset;
 }
 
-size_t BinaryInputStream::ReadBytes(void *destBuffer, size_t count)
+size_t BinaryInputStream::ReadData(void *destBuffer, size_t count)
 {
 	size_t remainingBytes = std::min(count, m_bufferSize - m_currentOffset);
 	std::memcpy(destBuffer, m_bufferAddress + m_currentOffset, remainingBytes);

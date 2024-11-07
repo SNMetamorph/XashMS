@@ -26,21 +26,30 @@ public:
 	{
 		static_assert(std::is_scalar<T>(), "type should be scalar");
 		T temp;
-		ReadBytes(&temp, sizeof(T));
-		return temp;
+		if (ReadData(&temp, sizeof(T)) == sizeof(T)) {
+			return temp;
+		}
+		else 
+		{
+			m_underflowFlag = true;
+			return T();
+		}
 	}
 
-	size_t SkipBytes(size_t count);
+	bool SkipBytes(size_t count);
 	bool SkipString();
 	bool ReadString(std::string &dest);
+	bool ReadBytes(void *destBuffer, size_t count);
 	bool EndOfFile() const;
+	bool Underflowed() const;
 	size_t GetBufferSize() const;
 	size_t GetPosition() const;
 
 private:
-	size_t ReadBytes(void *destBuffer, size_t count);
+	size_t ReadData(void *destBuffer, size_t count);
 
 	size_t m_bufferSize;
 	size_t m_currentOffset;
+	bool m_underflowFlag;
 	const uint8_t *m_bufferAddress;
 };
