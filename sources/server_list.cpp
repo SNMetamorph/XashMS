@@ -123,7 +123,7 @@ void ServerList::RemoveExpiredServers()
 		if (entry.Expired(m_configManager.GetData().GetServerTimeoutInterval())) 
 		{
 			auto address = it->first;
-			it = it++; // increment iterator before it will be invalidated
+			it = m_serversMap.erase(it); 
 			Remove(address);
 		}
 		else {
