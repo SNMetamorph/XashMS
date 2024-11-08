@@ -21,8 +21,9 @@ GNU General Public License for more details.
 #include "client_query_request.h"
 #include "server_challenge_request.h"
 #include "server_append_request.h"
+#include "admin_command_request.h"
 #include <optional>
-#include <unordered_map>
+#include <unordered_set>
 #include <string>
 
 class RequestHandler
@@ -35,7 +36,10 @@ private:
 	void ProcessClientQuery(Socket &socket, const NetAddress &sourceAddr, ClientQueryRequest &req);
 	void ProcessChallengeRequest(Socket &socket, const NetAddress &sourceAddr, ServerChallengeRequest &req);
 	void ProcessAddServerRequest(Socket &socket, const NetAddress &sourceAddr, ServerAppendRequest &req);
+	void ProcessAdminChallengeRequest(Socket &socket, const NetAddress &sourceAddr);
+	void ProcessAdminCommandRequest(Socket &socket, const NetAddress &sourceAddr, AdminCommandRequest &req);
 
+	void HandleAdminCommand(const NetAddress &sourceAddr, const std::string &name, const std::string &command);
 	void SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, ClientQueryRequest &req);
 	void SendChallengeResponse(Socket &socket, const NetAddress &dest, uint32_t ch1, std::optional<uint32_t> ch2);
 	void SendFakeServerInfo(Socket &socket, const NetAddress &dest, const std::string &gamedir);
@@ -43,4 +47,5 @@ private:
 
 	ServerList &m_serverList;
 	ConfigManager &m_configManager;
+	std::unordered_set<NetAddress, NetAddressHash> m_banlist;
 };

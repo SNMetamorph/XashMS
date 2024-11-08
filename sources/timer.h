@@ -13,6 +13,7 @@ GNU General Public License for more details.
 */
 
 #pragma once
+#include <utility>
 
 class Timer
 {

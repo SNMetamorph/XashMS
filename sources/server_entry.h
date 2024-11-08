@@ -31,7 +31,7 @@ public:
 
 	void Update(const InfostringData &data);
 	void ResetTimeout();
-	bool Timeout(double interval) const;
+	bool Expired(double interval) const;
 
 	bool NatBypassEnabled() const { return m_natBypass; }
 	uint32_t GetProtocolVersion() const { return m_protocol; }

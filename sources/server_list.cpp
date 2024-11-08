@@ -23,8 +23,9 @@ ServerList::ServerList(ConfigManager &configManager) :
 
 void ServerList::UpdateState()
 {
-	CleanupStallServers();
-	RemoveTimeoutChallenges();
+	RemoveExpiredServers();
+	RemoveExpiredChallenges();
+	RemoveExpiredAdminChallenges();
 }
 
 ServerEntry &ServerList::Insert(const NetAddress &address)
@@ -42,13 +43,29 @@ bool ServerList::Contains(const NetAddress &addr) const
 	return m_serversMap.count(addr) > 0;
 }
 
+void ServerList::BanAddress(const NetAddress &address)
+{
+	m_serverCountMap.erase(address);
+	for (auto it = m_serversMap.begin(); it != m_serversMap.end();)
+	{
+		const auto &entry = it->second;
+		const auto serverAddress = it->first;
+		if (serverAddress.Equals(address)) {
+			it = m_serversMap.erase(it);
+		}
+		else {
+			it++;
+		}
+	}
+}
+
 uint32_t ServerList::GenerateChallenge(const NetAddress &address)
 {
 	if (m_challengeMap.count(address) < 1)
 	{
 		uint32_t challenge;
 		evutil_secure_rng_get_bytes(&challenge, sizeof(challenge));
-		m_challengeMap.insert({ address, ChallengeEntry(challenge) });
+		m_challengeMap.insert({ address, Expirable<uint32_t>(challenge) });
 	}
 	return m_challengeMap.at(address).GetValue();
 }
@@ -66,6 +83,23 @@ bool ServerList::ValidateChallenge(const NetAddress &address, uint32_t challenge
 	return m_challengeMap.at(address).GetValue() == challenge;
 }
 
+ServerList::AdminChallenge ServerList::GetAdminChallenge(const NetAddress &address)
+{
+	if (m_adminChallengeMap.count(address) < 1)
+	{
+		AdminChallenge challenge;
+		evutil_secure_rng_get_bytes(&challenge.hash, sizeof(challenge.hash));
+		evutil_secure_rng_get_bytes(&challenge.master, sizeof(challenge.master));
+		m_adminChallengeMap.insert({ address, Expirable<AdminChallenge>(challenge) });
+	}
+	return m_adminChallengeMap.at(address).GetValue();
+}
+
+bool ServerList::CheckAdminChallenge(const NetAddress &address) const
+{
+	return m_adminChallengeMap.count(address) > 0;
+}
+
 size_t ServerList::GetCountForAddress(const NetAddress &addr) const
 {
 	return (m_serverCountMap.count(addr) < 1) ? 0 : m_serverCountMap.at(addr);
@@ -81,12 +115,12 @@ void ServerList::Remove(const NetAddress &address)
 	m_serversMap.erase(address);
 }
 
-void ServerList::CleanupStallServers()
+void ServerList::RemoveExpiredServers()
 {
 	for (auto it = m_serversMap.begin(); it != m_serversMap.end();)
 	{
 		const auto &entry = it->second;
-		if (entry.Timeout(m_configManager.GetData().GetServerTimeoutInterval())) 
+		if (entry.Expired(m_configManager.GetData().GetServerTimeoutInterval())) 
 		{
 			auto address = it->first;
 			it = it++; // increment iterator before it will be invalidated
@@ -99,13 +133,27 @@ void ServerList::CleanupStallServers()
 	// TODO operations to clean up memory that was used for removed elements
 }
 
-void ServerList::RemoveTimeoutChallenges()
+void ServerList::RemoveExpiredChallenges()
 {
 	for (auto it = m_challengeMap.begin(); it != m_challengeMap.end();)
 	{
 		const auto &entry = it->second;
-		if (entry.Timeout(m_configManager.GetData().GetChallengeTimeoutInterval())) {
+		if (entry.Expired(m_configManager.GetData().GetChallengeTimeoutInterval())) {
 			it = m_challengeMap.erase(it);
+		}
+		else {
+			it++;
+		}
+	}
+}
+
+void ServerList::RemoveExpiredAdminChallenges()
+{
+	for (auto it = m_adminChallengeMap.begin(); it != m_adminChallengeMap.end();)
+	{
+		const auto &entry = it->second;
+		if (entry.Expired(m_configManager.GetData().GetChallengeTimeoutInterval())) {
+			it = m_adminChallengeMap.erase(it);
 		}
 		else {
 			it++;

@@ -55,7 +55,7 @@ void ServerEntry::ResetTimeout()
 	m_keepAliveTimer.Reset();
 }
 
-bool ServerEntry::Timeout(double interval) const
+bool ServerEntry::Expired(double interval) const
 {
 	return m_keepAliveTimer.IntervalElapsed(interval);
 }

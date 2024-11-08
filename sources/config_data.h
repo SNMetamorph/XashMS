@@ -20,6 +20,12 @@ GNU General Public License for more details.
 class ConfigData
 {
 public:
+	struct AdminEntry
+	{
+		std::string name;
+		std::string password;
+	};
+
 	ConfigData();
 	ConfigData(const ConfigData&) = default;
 	ConfigData(ConfigData&&) noexcept = default;
@@ -31,10 +37,18 @@ public:
 	float GetCleanupInterval() const { return m_cleanupInterval; }
 	float GetServerTimeoutInterval() const { return m_serverTimeoutInterval; }
 	float GetChallengeTimeoutInterval() const { return m_challengeTimeoutInterval; }
+	size_t GetAdminHashLength() const { return m_adminHashLength; }
+	const std::string& GetAdminHashKey() const { return m_adminHashKey; }
+	const std::string& GetAdminHashPersonal() const { return m_adminHashPersonal; }
+	const std::vector<AdminEntry>& GetAdmins() const { return m_adminsList; }
 
 private:
 	size_t m_serverCountQuota;
+	size_t m_adminHashLength;
 	float m_cleanupInterval;
 	float m_serverTimeoutInterval;
 	float m_challengeTimeoutInterval;
+	std::string m_adminHashKey;
+	std::string m_adminHashPersonal;
+	std::vector<AdminEntry> m_adminsList;
 };

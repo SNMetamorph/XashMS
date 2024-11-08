@@ -13,27 +13,23 @@ GNU General Public License for more details.
 */
 
 #pragma once
-#include "binary_input_stream.h"
-#include "infostring_data.h"
-#include <optional>
+#include "binary_output_stream.h"
 #include <stdint.h>
 
-class ServerAppendRequest
+class AdminChallengeResponse
 {
 public:
-	~ServerAppendRequest() = default;
-	static std::optional<ServerAppendRequest> Parse(BinaryInputStream &stream);
+	static constexpr const char *Header = "\xff\xff\xff\xff" "adminchallenge";
 
-	uint32_t GetMasterChallenge() const { return m_challenge; }
-	const InfostringData &GetInfostringData() const { return m_infostringData; }
+	AdminChallengeResponse(uint32_t masterChallenge, uint32_t hashChallenge) :
+		m_masterChallenge(masterChallenge),
+		m_hashChallenge(hashChallenge)
+	{
+	}
 
-	static constexpr const char *Header = "0\n";
+	void Serialize(BinaryOutputStream &stream) const;
 
 private:
-	ServerAppendRequest() = default;
-
-	bool ValidateInfostring(const InfostringData &data);
-
-	uint32_t m_challenge;
-	InfostringData m_infostringData;
+	uint32_t m_masterChallenge;
+	uint32_t m_hashChallenge;
 };

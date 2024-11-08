@@ -14,26 +14,27 @@ GNU General Public License for more details.
 
 #pragma once
 #include "binary_input_stream.h"
-#include "infostring_data.h"
+#include <array>
+#include <string>
 #include <optional>
 #include <stdint.h>
 
-class ServerAppendRequest
+class AdminCommandRequest
 {
 public:
-	~ServerAppendRequest() = default;
-	static std::optional<ServerAppendRequest> Parse(BinaryInputStream &stream);
+	static constexpr const char *Header = "admin";
 
+	~AdminCommandRequest() = default;
+
+	static std::optional<AdminCommandRequest> Parse(BinaryInputStream &stream, size_t hashLength);
 	uint32_t GetMasterChallenge() const { return m_challenge; }
-	const InfostringData &GetInfostringData() const { return m_infostringData; }
-
-	static constexpr const char *Header = "0\n";
+	const std::string& GetCommand() const { return m_command; }
+	const uint8_t *GetHash() const { return m_hash.data(); }
 
 private:
-	ServerAppendRequest() = default;
-
-	bool ValidateInfostring(const InfostringData &data);
+	AdminCommandRequest() = default;
 
 	uint32_t m_challenge;
-	InfostringData m_infostringData;
+	std::string m_command;
+	std::array<uint8_t, 64> m_hash;
 };
