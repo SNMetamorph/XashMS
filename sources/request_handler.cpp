@@ -27,16 +27,46 @@ RequestHandler::RequestHandler(ServerList &serverList, ConfigManager &configMana
 {
 }
 
+void RequestHandler::UpdateState()
+{
+	m_packetRateMap.clear();
+	for (auto it = m_rateLimitBanlist.begin(); it != m_rateLimitBanlist.end(); it++)
+	{
+		const auto &entry = it->second;
+		if (entry.CycleElapsed()) {
+			it = m_rateLimitBanlist.erase(it);
+		}
+		else {
+			it++;
+		}
+	}
+}
+
 void RequestHandler::HandlePacket(Socket &socket, const NetAddress &sourceAddr)
 {
+	if (m_banlist.count(sourceAddr) > 0 || m_rateLimitBanlist.count(sourceAddr) > 0) {
+		return; // ignore packets from banned addresses
+	}
+	else
+	{
+		m_packetRateMap[sourceAddr] += 1;
+		if (m_packetRateMap[sourceAddr] > m_configManager.GetData().GetPacketRateLimit()) 
+		{
+			m_rateLimitBanlist.insert({ sourceAddr, Timer(m_configManager.GetData().GetRateLimitBanTime()) });
+			Utils::Log("Address {} banned due to exceeding packet rate limit\n", sourceAddr.ToString());
+		}
+	}
+
 	auto &recvBuffer = socket.GetDataBuffer();
 	if (recvBuffer.size() < 2) {
 		return; // invalid size packet, ignore it
 	}
-	else if (m_banlist.count(sourceAddr) > 0) {
-		return; // ignore packets from banned addresses
-	}
+	HandleRequest(socket, sourceAddr);
+}
 
+void RequestHandler::HandleRequest(Socket &socket, const NetAddress &sourceAddr)
+{
+	auto &recvBuffer = socket.GetDataBuffer();
 	BinaryInputStream stream(recvBuffer.data(), recvBuffer.size());
 	if (std::memcmp(recvBuffer.data(), ClientQueryRequest::Header, 1) == 0)
 	{

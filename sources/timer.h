@@ -19,6 +19,12 @@ class Timer
 {
 public:
 	Timer();
+	Timer(double interval);
+	Timer(const Timer&) = default;
+	Timer(Timer&&) noexcept = default;
+	Timer& operator=(const Timer&) = default;
+	Timer& operator=(Timer&&) noexcept = default;
+
 	void Reset();
 	void SetInterval(double interval);
 	bool CycleElapsed() const;

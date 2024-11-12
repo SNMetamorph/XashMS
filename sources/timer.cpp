@@ -21,6 +21,12 @@ Timer::Timer() :
 {
 }
 
+Timer::Timer(double interval) :
+	m_interval(interval)
+{
+	Reset();
+}
+
 void Timer::Reset()
 {
 	auto duration = std::chrono::steady_clock::now().time_since_epoch();

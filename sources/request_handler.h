@@ -13,6 +13,7 @@ GNU General Public License for more details.
 */
 
 #pragma once
+#include "timer.h"
 #include "socket.h"
 #include "net_address.h"
 #include "infostring_data.h"
@@ -24,15 +25,19 @@ GNU General Public License for more details.
 #include "admin_command_request.h"
 #include <optional>
 #include <unordered_set>
+#include <unordered_map>
 #include <string>
 
 class RequestHandler
 {
 public:
 	RequestHandler(ServerList &serverList, ConfigManager &configManager);
+	void UpdateState();
 	void HandlePacket(Socket &socket, const NetAddress &sourceAddr);
 
 private:
+	void HandleRequest(Socket &socket, const NetAddress &sourceAddr);
+
 	void ProcessClientQuery(Socket &socket, const NetAddress &sourceAddr, ClientQueryRequest &req);
 	void ProcessChallengeRequest(Socket &socket, const NetAddress &sourceAddr, ServerChallengeRequest &req);
 	void ProcessAddServerRequest(Socket &socket, const NetAddress &sourceAddr, ServerAppendRequest &req);
@@ -48,4 +53,6 @@ private:
 	ServerList &m_serverList;
 	ConfigManager &m_configManager;
 	std::unordered_set<NetAddress, NetAddressHash> m_banlist;
+	std::unordered_map<NetAddress, Timer, NetAddressHash> m_rateLimitBanlist;
+	std::unordered_map<NetAddress, uint32_t, NetAddressHash> m_packetRateMap;
 };

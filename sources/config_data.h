@@ -34,9 +34,11 @@ public:
 
 	bool Parse(const std::string &jsonData);
 	size_t GetServerCountQuota() const { return m_serverCountQuota; }
+	size_t GetPacketRateLimit() const { return m_packetRateLimit; }
 	float GetCleanupInterval() const { return m_cleanupInterval; }
 	float GetServerTimeoutInterval() const { return m_serverTimeoutInterval; }
 	float GetChallengeTimeoutInterval() const { return m_challengeTimeoutInterval; }
+	float GetRateLimitBanTime() const { return m_rateLimitBanTime; }
 	size_t GetAdminHashLength() const { return m_adminHashLength; }
 	const std::string& GetAdminHashKey() const { return m_adminHashKey; }
 	const std::string& GetAdminHashPersonal() const { return m_adminHashPersonal; }
@@ -45,9 +47,11 @@ public:
 private:
 	size_t m_serverCountQuota;
 	size_t m_adminHashLength;
+	size_t m_packetRateLimit;
 	float m_cleanupInterval;
 	float m_serverTimeoutInterval;
 	float m_challengeTimeoutInterval;
+	float m_rateLimitBanTime;
 	std::string m_adminHashKey;
 	std::string m_adminHashPersonal;
 	std::vector<AdminEntry> m_adminsList;

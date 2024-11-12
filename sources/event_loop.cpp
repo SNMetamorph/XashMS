@@ -31,11 +31,13 @@ public:
 	void RecvInetCallback();
 	void RecvInet6Callback();
 	void CleanupTimerCallback();
+	void SecondTimerCallback();
 
 private:
 	void InitInetSocketEvent();
 	void InitInet6SocketEvent();
 	void InitCleanupTimerEvent();
+	void InitSecondTimerEvent();
 	void InitSignalsEvents();
 
 	std::shared_ptr<Socket> m_socketInet;
@@ -47,6 +49,7 @@ private:
 	std::unique_ptr<ev::Event> m_receivePacketInetEvent;
 	std::unique_ptr<ev::Event> m_receivePacketInet6Event;
 	std::unique_ptr<ev::Event> m_cleanupTimerEvent;
+	std::unique_ptr<ev::Event> m_secondTimerEvent;
 	std::unique_ptr<ev::Event> m_sigtermSignalEvent;
 	std::unique_ptr<ev::Event> m_sigintSignalEvent;
 };
@@ -68,7 +71,9 @@ EventLoop::Impl::Impl(std::shared_ptr<Socket> socketInet,
 	if (socketInet6) {
 		InitInet6SocketEvent();
 	}
+
 	InitCleanupTimerEvent();
+	InitSecondTimerEvent();
 	InitSignalsEvents();
 }
 
@@ -129,7 +134,7 @@ void EventLoop::Impl::InitInet6SocketEvent()
 
 void EventLoop::Impl::InitCleanupTimerEvent()
 {
-	auto cleanupTimerCallback = [](evutil_socket_t fd, short event, void *arg) {
+	auto timerCallback = [](evutil_socket_t fd, short event, void *arg) {
 		EventLoop::Impl *impl = reinterpret_cast<EventLoop::Impl*>(arg);
 		impl->CleanupTimerCallback();
 	};
@@ -139,10 +144,28 @@ void EventLoop::Impl::InitCleanupTimerEvent()
 		*m_eventBase, 
 		-1, 
 		EV_PERSIST, 
-		cleanupTimerCallback, 
+		timerCallback, 
 		this
 	);
 	m_cleanupTimerEvent->Add(&timerInterval);
+}
+
+void EventLoop::Impl::InitSecondTimerEvent()
+{
+	auto timerCallback = [](evutil_socket_t fd, short event, void *arg) {
+		EventLoop::Impl *impl = reinterpret_cast<EventLoop::Impl*>(arg);
+		impl->SecondTimerCallback();
+	};
+
+	timeval timerInterval = { 1, 0 };
+	m_secondTimerEvent = std::make_unique<ev::Event>(
+		*m_eventBase, 
+		-1, 
+		EV_PERSIST, 
+		timerCallback, 
+		this
+	);
+	m_secondTimerEvent->Add(&timerInterval);
 }
 
 void EventLoop::Impl::InitSignalsEvents()
@@ -187,4 +210,9 @@ void EventLoop::Impl::RecvInet6Callback()
 void EventLoop::Impl::CleanupTimerCallback()
 {
 	m_serverList->UpdateState();
+}
+
+void EventLoop::Impl::SecondTimerCallback()
+{
+	m_requestHandler->UpdateState();
 }

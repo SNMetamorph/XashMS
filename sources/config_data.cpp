@@ -19,7 +19,9 @@ GNU General Public License for more details.
 ConfigData::ConfigData() :
 	m_serverCountQuota(14),
 	m_adminHashLength(64),
+	m_packetRateLimit(100),
 	m_cleanupInterval(10.0f),
+	m_rateLimitBanTime(15.0f),
 	m_serverTimeoutInterval(360.0f),
 	m_challengeTimeoutInterval(15.0f),
 	m_adminHashKey("Half-Life"),
