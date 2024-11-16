@@ -13,10 +13,13 @@ GNU General Public License for more details.
 */
 
 #include "admin_command_request.h"
+#include <cstring>
 
 std::optional<AdminCommandRequest> AdminCommandRequest::Parse(BinaryInputStream &stream, size_t hashLength)
 {
 	AdminCommandRequest object;
+
+	stream.SkipBytes(std::strlen(AdminCommandRequest::Header));
 	object.m_challenge = stream.Read<uint32_t>();
 	stream.ReadBytes(object.m_hash.data(), hashLength);
 	stream.ReadString(object.m_command);

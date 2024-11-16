@@ -21,12 +21,7 @@ class AdminChallengeResponse
 public:
 	static constexpr const char *Header = "\xff\xff\xff\xff" "adminchallenge";
 
-	AdminChallengeResponse(uint32_t masterChallenge, uint32_t hashChallenge) :
-		m_masterChallenge(masterChallenge),
-		m_hashChallenge(hashChallenge)
-	{
-	}
-
+	AdminChallengeResponse(uint32_t masterChallenge, uint32_t hashChallenge);
 	void Serialize(BinaryOutputStream &stream) const;
 
 private:

@@ -15,9 +15,15 @@ GNU General Public License for more details.
 #include "admin_challenge_response.h"
 #include <cstring>
 
+AdminChallengeResponse::AdminChallengeResponse(uint32_t masterChallenge, uint32_t hashChallenge) :
+	m_masterChallenge(masterChallenge),
+	m_hashChallenge(hashChallenge)
+{
+}
+
 void AdminChallengeResponse::Serialize(BinaryOutputStream &stream) const
 {
-	stream.WriteBytes(Header, std::strlen(Header));
+	stream.WriteBytes(Header, std::strlen(AdminChallengeResponse::Header));
 	stream.Write<uint32_t>(m_masterChallenge);
 	stream.Write<uint32_t>(m_hashChallenge);
 }
