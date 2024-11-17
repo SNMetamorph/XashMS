@@ -19,11 +19,11 @@ GNU General Public License for more details.
 #include "admin_challenge_request.h"
 #include "admin_challenge_response.h"
 #include "utils.h"
-#include <cryptopp/blake2.h>
 
 RequestHandler::RequestHandler(ServerList &serverList, ConfigManager &configManager) :
 	m_serverList(serverList),
-	m_configManager(configManager)
+	m_configManager(configManager),
+	m_adminCommandHandler(serverList, configManager, m_banlist)
 {
 }
 
@@ -114,7 +114,7 @@ void RequestHandler::HandleRequest(Socket &socket, const NetAddress &sourceAddr)
 
 		auto request = AdminCommandRequest::Parse(stream, m_configManager.GetData().GetAdminHashLength());
 		if (request.has_value()) {
-			ProcessAdminCommandRequest(socket, sourceAddr, request.value());
+			ProcessAdminCommandRequest(sourceAddr, request.value());
 		}
 	}
 }
@@ -178,14 +178,14 @@ void RequestHandler::ProcessAdminChallengeRequest(Socket &socket, const NetAddre
 
 	std::vector<uint8_t> buffer;
 	BinaryOutputStream stream(buffer);
-	ServerList::AdminChallenge challenge = m_serverList.GetAdminChallenge(sourceAddr);
+	AdminChallenge challenge = m_serverList.GetAdminChallenge(sourceAddr);
 
 	AdminChallengeResponse response(challenge.master, challenge.hash);
 	response.Serialize(stream);
 	socket.SendTo(sourceAddr, buffer);
 }
 
-void RequestHandler::ProcessAdminCommandRequest(Socket &socket, const NetAddress &sourceAddr, AdminCommandRequest &request)
+void RequestHandler::ProcessAdminCommandRequest(const NetAddress &sourceAddr, AdminCommandRequest &request)
 {
 	auto challenge = m_serverList.GetAdminChallenge(sourceAddr);
 	if (challenge.master != request.GetMasterChallenge())
@@ -193,75 +193,7 @@ void RequestHandler::ProcessAdminCommandRequest(Socket &socket, const NetAddress
 		Utils::Log("Incorrect admin challenge from {}:{}\n", sourceAddr.ToString(), sourceAddr.GetPort());
 		return;
 	}
-
-	const std::string &key = m_configManager.GetData().GetAdminHashKey();
-	const std::string &personal = m_configManager.GetData().GetAdminHashPersonal();
-	size_t hashLength = m_configManager.GetData().GetAdminHashLength();
-
-	CryptoPP::BLAKE2b initialHashState(
-		reinterpret_cast<const uint8_t*>(key.c_str()),
-		key.length(),
-		nullptr,
-		0,
-		reinterpret_cast<const uint8_t*>(personal.c_str()),
-		personal.length(),
-		false,
-		hashLength
-	);
-
-	std::vector<uint8_t> digestBuffer(hashLength, '\0');
-	const auto admins = m_configManager.GetData().GetAdmins();
-	for (auto it = admins.begin(); it != admins.end(); it++)
-	{
-		const auto entry = *it;
-		const size_t passwordLength = entry.password.length();
-		const uint8_t *passwordData = reinterpret_cast<const uint8_t*>(entry.password.c_str());
-
-		CryptoPP::BLAKE2b hash(initialHashState);
-		hash.Update(passwordData, passwordLength);
-		hash.Update(reinterpret_cast<uint8_t*>(&challenge.hash), sizeof(challenge.hash));
-		hash.Final(digestBuffer.data());
-
-		if (std::memcmp(digestBuffer.data(), request.GetHash(), hashLength) == 0) 
-		{
-			HandleAdminCommand(sourceAddr, entry.name, request.GetCommand());
-			return;
-		}
-	}
-
-	Utils::Log("Unauthorized admin command attempt from {}:{}\n", sourceAddr.ToString(), sourceAddr.GetPort());
-}
-
-void RequestHandler::HandleAdminCommand(const NetAddress &sourceAddr, const std::string &name, const std::string &command)
-{
-	std::vector<std::string_view> tokens = Utils::Tokenize(command, " ");
-	if (tokens.size() == 2)
-	{
-		std::string commandName(tokens[0]);
-		std::string commandArgument(tokens[1]);
-		if (commandName.compare("ban") == 0)
-		{
-			auto address = NetAddress::Parse(commandArgument.c_str());
-			if (address.has_value()) 
-			{
-				m_banlist.insert(address.value());
-				m_serverList.BanAddress(address.value());
-				Utils::Log("Admin {}({}) banned address {}\n", name, sourceAddr.ToString(), address.value().ToString());
-				return;
-			}
-		}
-		else if (commandName.compare("unban") == 0)
-		{
-			auto address = NetAddress::Parse(commandArgument.c_str());
-			if (address.has_value()) 
-			{
-				m_banlist.erase(address.value());
-				Utils::Log("Admin {}({}) unbanned address {}\n", name, sourceAddr.ToString(), address.value().ToString());
-				return;
-			}
-		}
-	}
-	Utils::Log("Admin {}({}) issued unknown command \"{}\"\n", name, sourceAddr.ToString(), command);
+	m_adminCommandHandler.HandleCommandRequest(sourceAddr, request, challenge);
 }
 
 void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, ClientQueryRequest &request)

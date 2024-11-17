@@ -83,7 +83,7 @@ bool ServerList::ValidateChallenge(const NetAddress &address, uint32_t challenge
 	return m_challengeMap.at(address).GetValue() == challenge;
 }
 
-ServerList::AdminChallenge ServerList::GetAdminChallenge(const NetAddress &address)
+AdminChallenge ServerList::GetAdminChallenge(const NetAddress &address)
 {
 	if (m_adminChallengeMap.count(address) < 1)
 	{

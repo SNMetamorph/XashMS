@@ -17,6 +17,7 @@ GNU General Public License for more details.
 #include "net_address.h"
 #include "server_entry.h"
 #include "config_manager.h"
+#include "admin_challenge.h"
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -26,11 +27,6 @@ class ServerList
 {
 public:
 	using EntryContainer = std::unordered_map<NetAddress, ServerEntry, NetAddressPortHash>;
-	struct AdminChallenge
-	{
-		uint32_t master;
-		uint32_t hash;
-	};
 
 	ServerList(ConfigManager &configManager);
 	void UpdateState();
@@ -54,7 +50,7 @@ private:
 	void RemoveExpiredChallenges();
 	void RemoveExpiredAdminChallenges();
 
-	ConfigManager& m_configManager;
+	ConfigManager &m_configManager;
 	EntryContainer m_serversMap;
 	std::unordered_map<NetAddress, int32_t, NetAddressHash> m_serverCountMap;
 	std::unordered_map<NetAddress, Expirable<uint32_t>, NetAddressPortHash> m_challengeMap;
