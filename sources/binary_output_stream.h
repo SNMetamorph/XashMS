@@ -15,29 +15,30 @@ GNU General Public License for more details.
 #pragma once
 #include "net_address.h"
 #include <vector>
-#include <string>
+#include <optional>
+#include <functional>
 #include <stdint.h>
 
 class BinaryOutputStream
 {
 public:
 	BinaryOutputStream(std::vector<uint8_t> &buffer);
+	BinaryOutputStream(uint8_t *buffer, size_t bufferSize);
 
-	void WriteString(const char *text, bool includeNull = false);
-	void WriteBytes(const void *data, size_t count);
-	void WriteByte(uint8_t value, size_t repeats = 1);
-	void WriteNetAddress(const NetAddress &address);
+	bool WriteString(const char *text, bool includeNull = false);
+	bool WriteBytes(const void *data, size_t count);
+	bool WriteByte(uint8_t value, size_t repeats = 1);
+	bool WriteNetAddress(const NetAddress &address);
 
-	template<class T> void Write(const T& value) 
+	template<class T> bool Write(const T& value) 
 	{
 		static_assert(std::is_scalar<T>(), "type should be scalar");
-		const uint8_t *dataAddress = reinterpret_cast<const uint8_t*>(&value);
-		m_buffer.reserve(m_buffer.size() + sizeof(T));
-		for (size_t i = 0; i < sizeof(T); i++) {
-			m_buffer.push_back(dataAddress[i]);
-		}
+		return WriteBytes(reinterpret_cast<const uint8_t*>(&value), sizeof(T));
 	}
 
 private:
-	std::vector<uint8_t> &m_buffer;
+	uint8_t *m_buffer;
+	size_t m_offset;
+	size_t m_bufferSize;
+	std::optional<std::reference_wrapper<std::vector<uint8_t>>> m_dynamicBuffer; // maybe just use pointer? no.
 };

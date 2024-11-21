@@ -16,37 +16,75 @@ GNU General Public License for more details.
 #include <cstring>
 
 BinaryOutputStream::BinaryOutputStream(std::vector<uint8_t> &buffer) :
-	m_buffer(buffer)
+	m_buffer(nullptr),
+	m_offset(0),
+	m_bufferSize(0),
+	m_dynamicBuffer(buffer)
 {
 	buffer.clear();
 }
 
-void BinaryOutputStream::WriteString(const char *text, bool includeNull)
+BinaryOutputStream::BinaryOutputStream(uint8_t *buffer, size_t bufferSize) :
+	m_buffer(buffer),
+	m_offset(0),
+	m_bufferSize(bufferSize),
+	m_dynamicBuffer(std::nullopt)
+{
+}
+
+bool BinaryOutputStream::WriteString(const char *text, bool includeNull)
 {
 	size_t length = std::strlen(text);
-	m_buffer.insert(m_buffer.end(), text, text + length);
-	if (includeNull) {
-		m_buffer.push_back(0x0);
-	}
+	return WriteBytes(text, includeNull ? length + 1 : length);
 }
 
-void BinaryOutputStream::WriteBytes(const void *data, size_t count)
+bool BinaryOutputStream::WriteBytes(const void *data, size_t count)
 {
 	const uint8_t *sourceBuffer = reinterpret_cast<const uint8_t*>(data);
-	m_buffer.insert(m_buffer.end(), sourceBuffer, sourceBuffer + count);
+	if (m_dynamicBuffer.has_value()) 
+	{
+		auto &dynamicBuffer = m_dynamicBuffer.value().get();
+		dynamicBuffer.reserve(dynamicBuffer.size() + count);
+		dynamicBuffer.insert(dynamicBuffer.end(), sourceBuffer, sourceBuffer + count);
+		return true;
+	}
+	else
+	{
+		if (m_offset + count <= m_bufferSize)
+		{
+			std::memcpy(m_buffer + m_offset, sourceBuffer, count);
+			m_offset += count;
+			return true;
+		}
+	}
+	return false;
 }
 
-void BinaryOutputStream::WriteByte(uint8_t value, size_t repeats)
+bool BinaryOutputStream::WriteByte(uint8_t value, size_t repeats)
 {
-	m_buffer.insert(m_buffer.end(), repeats, value);
+	if (m_dynamicBuffer.has_value()) 
+	{
+		auto &dynamicBuffer = m_dynamicBuffer.value().get();
+		dynamicBuffer.reserve(dynamicBuffer.size() + repeats);
+		dynamicBuffer.insert(dynamicBuffer.end(), repeats, value);
+		return true;
+	}
+	else
+	{
+		if (m_offset + repeats <= m_bufferSize)
+		{
+			std::memset(m_buffer + m_offset, value, repeats);
+			m_offset += repeats;
+			return true;
+		}
+	}
+	return false;
 }
 
-void BinaryOutputStream::WriteNetAddress(const NetAddress &address)
+bool BinaryOutputStream::WriteNetAddress(const NetAddress &address)
 {
 	auto span = address.GetAddressSpan();
 	WriteBytes(span.first, span.second);
-
-	// write port number as big endian 16-bit integer
-	WriteByte((address.GetPort() >> 8) & 0xFF);
-	WriteByte(address.GetPort() & 0xFF);
+	WriteByte((address.GetPort() >> 8) & 0xFF); // write port number as big endian 16-bit integer
+	return WriteByte(address.GetPort() & 0xFF);
 }
