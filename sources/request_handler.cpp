@@ -176,13 +176,13 @@ void RequestHandler::ProcessAdminChallengeRequest(Socket &socket, const NetAddre
 		return; 
 	}
 
-	std::vector<uint8_t> buffer;
-	BinaryOutputStream stream(buffer);
+	uint8_t buffer[64];
+	BinaryOutputStream stream(buffer, sizeof(buffer));
 	AdminChallenge challenge = m_serverList.GetAdminChallenge(sourceAddr);
 
 	AdminChallengeResponse response(challenge.master, challenge.hash);
 	response.Serialize(stream);
-	socket.SendTo(sourceAddr, buffer);
+	socket.SendTo(sourceAddr, buffer, sizeof(buffer));
 }
 
 void RequestHandler::ProcessAdminCommandRequest(const NetAddress &sourceAddr, AdminCommandRequest &request)
@@ -246,15 +246,15 @@ void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &c
 
 void RequestHandler::SendChallengeResponse(Socket &socket, const NetAddress &dest, uint32_t ch1, std::optional<uint32_t> ch2)
 {
-	std::vector<uint8_t> buffer;
-	BinaryOutputStream response(buffer);
+	uint8_t buffer[64];
+	BinaryOutputStream response(buffer, sizeof(buffer));
 	
 	response.WriteString(MasterProtocol::challengePacketHeader);
 	response.Write<uint32_t>(ch1);
 	if (ch2.has_value()) {
 		response.Write<uint32_t>(ch2.value());
 	}
-	socket.SendTo(dest, buffer);
+	socket.SendTo(dest, buffer, sizeof(buffer));
 }
 
 void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, const std::string &gamedir)
@@ -291,11 +291,11 @@ void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, 
 
 void RequestHandler::SendNatBypassNotify(Socket &socket, const NetAddress &dest, const NetAddress &client)
 {
-	std::vector<uint8_t> tempBuffer;
-	BinaryOutputStream natBypassPacket(tempBuffer);
+	uint8_t buffer[64];
+	BinaryOutputStream natBypassPacket(buffer, sizeof(buffer));
 	std::string addrString = fmt::format("{}:{}", client.ToString(), client.GetPort());
 
 	natBypassPacket.WriteString(MasterProtocol::natBypassPacketHeader);
 	natBypassPacket.WriteBytes(addrString.c_str(), addrString.size());
-	socket.SendTo(dest, tempBuffer);
+	socket.SendTo(dest, buffer, sizeof(buffer));
 }
