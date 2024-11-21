@@ -130,6 +130,11 @@ NetAddress Socket::RecvFrom()
 
 bool Socket::SendTo(const NetAddress &destination, const std::vector<uint8_t> &data)
 {
+	return SendTo(destination, data.data(), data.size());
+}
+
+bool Socket::SendTo(const NetAddress &destination, const uint8_t *buffer, size_t dataSize)
+{
 	sockaddr *actualAddr;
 	size_t sockaddrSize;
 	sockaddr_in address_v4;
@@ -150,8 +155,8 @@ bool Socket::SendTo(const NetAddress &destination, const std::vector<uint8_t> &d
 		destination.ToSockadr(&address_v6);
 	}
 
-	const char *dataAddress = reinterpret_cast<const char*>(data.data());
-	if (sendto(m_socket, dataAddress, data.size(), 0, actualAddr, sockaddrSize) != data.size()) {
+	const char *dataAddress = reinterpret_cast<const char*>(buffer);
+	if (sendto(m_socket, dataAddress, dataSize, 0, actualAddr, sockaddrSize) != dataSize) {
 		return false;
 	}
 	return true;
