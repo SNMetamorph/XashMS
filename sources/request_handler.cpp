@@ -13,7 +13,6 @@ GNU General Public License for more details.
 */
 
 #include "request_handler.h"
-#include "master_protocol.h"
 #include "binary_input_stream.h"
 #include "binary_output_stream.h"
 #include "admin_challenge_request.h"
@@ -246,7 +245,7 @@ void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, 
 		infostring.Insert("gamedir", gamedir);
 
 		data.clear();
-		stream.WriteString(MasterProtocol::fakeServerInfoHeader);
+		stream.WriteString("\xff\xff\xff\xffinfo\n");
 		stream.WriteString(infostring.ToString().c_str());
 		socket.SendTo(dest, stream.GetBuffer(), stream.GetLength());
 	};
