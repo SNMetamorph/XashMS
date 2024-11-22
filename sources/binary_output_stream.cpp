@@ -32,6 +32,16 @@ BinaryOutputStream::BinaryOutputStream(uint8_t *buffer, size_t bufferSize) :
 {
 }
 
+const uint8_t *BinaryOutputStream::GetBuffer() const
+{
+	return m_dynamicBuffer.has_value() ? m_dynamicBuffer.value().get().data() : m_buffer;
+}
+
+size_t BinaryOutputStream::GetLength() const
+{
+	return m_dynamicBuffer.has_value() ? m_dynamicBuffer.value().get().size() : m_offset;
+}
+
 bool BinaryOutputStream::WriteString(const char *text, bool includeNull)
 {
 	size_t length = std::strlen(text);

@@ -25,6 +25,8 @@ public:
 	BinaryOutputStream(std::vector<uint8_t> &buffer);
 	BinaryOutputStream(uint8_t *buffer, size_t bufferSize);
 
+	const uint8_t *GetBuffer() const;
+	size_t GetLength() const;
 	bool WriteString(const char *text, bool includeNull = false);
 	bool WriteBytes(const void *data, size_t count);
 	bool WriteByte(uint8_t value, size_t repeats = 1);
