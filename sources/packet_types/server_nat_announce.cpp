@@ -12,10 +12,17 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 */
 
-#pragma once
+#include "server_nat_announce.h"
+#include <fmt/core.h>
 
-namespace MasterProtocol
+ServerNatAnnounce::ServerNatAnnounce(const NetAddress &clientAddress) :
+	m_clientAddress(clientAddress)
 {
-	constexpr const char *removeServer = "b\n";
-	constexpr const char *fakeServerInfoHeader = "\xff\xff\xff\xffinfo\n";
+}
+
+void ServerNatAnnounce::Serialize(BinaryOutputStream &stream) const
+{
+	std::string addrString = fmt::format("{}:{}", m_clientAddress.ToString(), m_clientAddress.GetPort());
+	stream.WriteString(ServerNatAnnounce::Header);
+	stream.WriteBytes(addrString.c_str(), addrString.size());
 }

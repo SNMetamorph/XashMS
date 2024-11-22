@@ -23,6 +23,7 @@ GNU General Public License for more details.
 #include "server_challenge_request.h"
 #include "server_append_request.h"
 #include "admin_command_request.h"
+#include <vector>
 #include <optional>
 #include <unordered_set>
 #include <unordered_map>
@@ -47,11 +48,12 @@ private:
 	void SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, ClientQueryRequest &req);
 	void SendChallengeResponse(Socket &socket, const NetAddress &dest, uint32_t ch1, std::optional<uint32_t> ch2);
 	void SendFakeServerInfo(Socket &socket, const NetAddress &dest, const std::string &gamedir);
-	void SendNatAnnounce(Socket &socket, const NetAddress &dest, const NetAddress &client);
+	void SendNatAnnouncements(Socket &socket, const NetAddress &clientAddr);
 
 	ServerList &m_serverList;
 	ConfigManager &m_configManager;
 	AdminCommandHandler m_adminCommandHandler;
+	std::vector<NetAddress> m_natAnnouncedServers;
 	std::unordered_set<NetAddress, NetAddressHash> m_banlist;
 	std::unordered_map<NetAddress, Timer, NetAddressHash> m_rateLimitBanlist;
 	std::unordered_map<NetAddress, uint32_t, NetAddressHash> m_packetRateMap;

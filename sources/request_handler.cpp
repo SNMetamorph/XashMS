@@ -19,6 +19,7 @@ GNU General Public License for more details.
 #include "admin_challenge_request.h"
 #include "admin_challenge_response.h"
 #include "server_challenge_response.h"
+#include "server_nat_announce.h"
 #include "client_query_response.h"
 #include "utils.h"
 
@@ -126,8 +127,10 @@ void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &source
 	if (request.ClientOutdated()) {
 		SendFakeServerInfo(socket, sourceAddr, request.GetGamedir());
 	}
-	else {
+	else 
+	{
 		SendClientQueryResponse(socket, sourceAddr, request);
+		SendNatAnnouncements(socket, sourceAddr);
 	}
 
 	Utils::Log("Client query: {}:{}, gamedir={}, clver={}, nat={}\n", 
@@ -201,7 +204,6 @@ void RequestHandler::ProcessAdminCommandRequest(const NetAddress &sourceAddr, Ad
 void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, ClientQueryRequest &request)
 {
 	std::vector<uint8_t> buffer;
-	std::vector<NetAddress> natServers;
 	BinaryOutputStream stream(buffer);
 
 	auto queryKey = request.GetQueryKey();
@@ -213,12 +215,8 @@ void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &c
 		m_serverList.GetEntriesCollection(), 
 		request.GetGamedir());
 
-	response.Serialize(stream, natServers);
+	response.Serialize(stream, m_natAnnouncedServers);
 	socket.SendTo(clientAddr, buffer);
-
-	for (const auto &address : natServers) {
-		SendNatAnnounce(socket, address, clientAddr);
-	}
 }
 
 void RequestHandler::SendChallengeResponse(Socket &socket, const NetAddress &dest, uint32_t ch1, std::optional<uint32_t> ch2)
@@ -263,13 +261,14 @@ void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, 
 	sendServerInfo(u8"GooglePlay или GitHub");
 }
 
-void RequestHandler::SendNatAnnounce(Socket &socket, const NetAddress &dest, const NetAddress &client)
+void RequestHandler::SendNatAnnouncements(Socket &socket, const NetAddress &clientAddr)
 {
 	uint8_t buffer[64];
-	BinaryOutputStream natBypassPacket(buffer, sizeof(buffer));
-	std::string addrString = fmt::format("{}:{}", client.ToString(), client.GetPort());
-
-	natBypassPacket.WriteString(MasterProtocol::natBypassPacketHeader);
-	natBypassPacket.WriteBytes(addrString.c_str(), addrString.size());
-	socket.SendTo(dest, buffer, sizeof(buffer));
+	for (const auto &serverAddr : m_natAnnouncedServers) 
+	{
+		BinaryOutputStream stream(buffer, sizeof(buffer));
+		ServerNatAnnounce response(clientAddr);
+		response.Serialize(stream);
+		socket.SendTo(serverAddr, stream.GetBuffer(), stream.GetLength());
+	}
 }

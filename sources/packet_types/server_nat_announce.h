@@ -13,9 +13,17 @@ GNU General Public License for more details.
 */
 
 #pragma once
+#include "net_address.h"
+#include "binary_output_stream.h"
 
-namespace MasterProtocol
+class ServerNatAnnounce
 {
-	constexpr const char *removeServer = "b\n";
-	constexpr const char *fakeServerInfoHeader = "\xff\xff\xff\xffinfo\n";
-}
+public:
+	static constexpr const char *Header = "\xff\xff\xff\xff" "c ";
+
+	ServerNatAnnounce(const NetAddress &clientAddress);
+	void Serialize(BinaryOutputStream &stream) const;
+
+private:
+	NetAddress m_clientAddress;
+};
