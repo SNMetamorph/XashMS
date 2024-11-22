@@ -187,7 +187,7 @@ void RequestHandler::ProcessAdminChallengeRequest(Socket &socket, const NetAddre
 
 	AdminChallengeResponse response(challenge.master, challenge.hash);
 	response.Serialize(stream);
-	socket.SendTo(sourceAddr, buffer, sizeof(buffer));
+	socket.SendTo(sourceAddr, stream.GetBuffer(), stream.GetLength());
 }
 
 void RequestHandler::ProcessAdminCommandRequest(const NetAddress &sourceAddr, AdminCommandRequest &request)
@@ -216,7 +216,7 @@ void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &c
 		request.GetGamedir());
 
 	response.Serialize(stream, m_natAnnouncedServers);
-	socket.SendTo(clientAddr, buffer);
+	socket.SendTo(clientAddr, stream.GetBuffer(), stream.GetLength());
 }
 
 void RequestHandler::SendChallengeResponse(Socket &socket, const NetAddress &dest, uint32_t ch1, std::optional<uint32_t> ch2)
@@ -226,13 +226,13 @@ void RequestHandler::SendChallengeResponse(Socket &socket, const NetAddress &des
 
 	ServerChallengeResponse response(ch1, ch2);
 	response.Serialize(stream);
-	socket.SendTo(dest, buffer, sizeof(buffer));
+	socket.SendTo(dest, stream.GetBuffer(), stream.GetLength());
 }
 
 void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, const std::string &gamedir)
 {
 	std::vector<uint8_t> data;
-	BinaryOutputStream response(data);
+	BinaryOutputStream stream(data);
 
 	auto sendServerInfo = [&](std::string message) {
 		InfostringData infostring;
@@ -246,9 +246,9 @@ void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, 
 		infostring.Insert("gamedir", gamedir);
 
 		data.clear();
-		response.WriteString(MasterProtocol::fakeServerInfoHeader);
-		response.WriteString(infostring.ToString().c_str());
-		socket.SendTo(dest, data);
+		stream.WriteString(MasterProtocol::fakeServerInfoHeader);
+		stream.WriteString(infostring.ToString().c_str());
+		socket.SendTo(dest, stream.GetBuffer(), stream.GetLength());
 	};
 
 	sendServerInfo(u8"This version is not");
