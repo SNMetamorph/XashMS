@@ -18,6 +18,7 @@ GNU General Public License for more details.
 #include "binary_output_stream.h"
 #include "admin_challenge_request.h"
 #include "admin_challenge_response.h"
+#include "server_challenge_response.h"
 #include "utils.h"
 
 RequestHandler::RequestHandler(ServerList &serverList, ConfigManager &configManager) :
@@ -247,13 +248,10 @@ void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &c
 void RequestHandler::SendChallengeResponse(Socket &socket, const NetAddress &dest, uint32_t ch1, std::optional<uint32_t> ch2)
 {
 	uint8_t buffer[64];
-	BinaryOutputStream response(buffer, sizeof(buffer));
+	BinaryOutputStream stream(buffer, sizeof(buffer));
 	
-	response.WriteString(MasterProtocol::challengePacketHeader);
-	response.Write<uint32_t>(ch1);
-	if (ch2.has_value()) {
-		response.Write<uint32_t>(ch2.value());
-	}
+	ServerChallengeResponse response(ch1, ch2);
+	response.Serialize(stream);
 	socket.SendTo(dest, buffer, sizeof(buffer));
 }
 

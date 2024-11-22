@@ -12,12 +12,19 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 */
 
-#pragma once
+#include "server_challenge_response.h"
 
-namespace MasterProtocol
+ServerChallengeResponse::ServerChallengeResponse(uint32_t challenge, std::optional<uint32_t> clientChallenge) :
+	m_challenge(challenge),
+	m_clientChallenge(clientChallenge)
 {
-	constexpr const char *removeServer = "b\n";
-	constexpr const char *queryPacketHeader = "\xff\xff\xff\xff\x66\n";
-	constexpr const char *natBypassPacketHeader = "\xff\xff\xff\xff\x63\x20";
-	constexpr const char *fakeServerInfoHeader = "\xff\xff\xff\xffinfo\n";
+}
+
+void ServerChallengeResponse::Serialize(BinaryOutputStream &stream) const
+{
+	stream.WriteString(ServerChallengeResponse::Header);
+	stream.Write<uint32_t>(m_challenge);
+	if (m_clientChallenge.has_value()) {
+		stream.Write<uint32_t>(m_clientChallenge.value());
+	}
 }

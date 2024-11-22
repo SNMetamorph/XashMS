@@ -30,6 +30,7 @@ list(APPEND FILE_SOURCES
 	"sources/admin_command_handler.cpp"
 	"sources/packet_types/client_query_request.cpp"
 	"sources/packet_types/server_challenge_request.cpp"
+	"sources/packet_types/server_challenge_response.cpp"
 	"sources/packet_types/server_append_request.cpp"
 	"sources/packet_types/admin_challenge_response.cpp"
 	"sources/packet_types/admin_command_request.cpp"
