@@ -19,6 +19,7 @@ GNU General Public License for more details.
 #include "admin_challenge_request.h"
 #include "admin_challenge_response.h"
 #include "server_challenge_response.h"
+#include "client_query_response.h"
 #include "utils.h"
 
 RequestHandler::RequestHandler(ServerList &serverList, ConfigManager &configManager) :
@@ -200,56 +201,31 @@ void RequestHandler::ProcessAdminCommandRequest(const NetAddress &sourceAddr, Ad
 void RequestHandler::SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, ClientQueryRequest &request)
 {
 	std::vector<uint8_t> buffer;
-	BinaryOutputStream response(buffer);
+	std::vector<NetAddress> natServers;
+	BinaryOutputStream stream(buffer);
+
 	auto queryKey = request.GetQueryKey();
+	ClientQueryResponse response(
+		request.ClientBypassingNat(), 
+		queryKey, 
+		request.GetProtocolVersion(), 
+		clientAddr, 
+		m_serverList.GetEntriesCollection(), 
+		request.GetGamedir());
 
-	response.WriteString(MasterProtocol::queryPacketHeader);
-	if (queryKey.has_value())
-	{
-		response.WriteByte(0x7F);
-		response.Write<uint32_t>(queryKey.value());
-		response.WriteByte(0x00);
-	}
-
-	// TODO implement pagination mechanism to bypass MTU limit, when servers count are huge
-	// but for November 2024, engine still does not supports such mechanism
-	// for more information see CL_ServerList function in engine sources
-	bool natBypass = request.ClientBypassingNat();
-	auto clientProtocol = request.GetProtocolVersion();
-	for (const auto &[serverAddr, entry] : m_serverList.GetEntriesCollection())
-	{
-		if (serverAddr.GetAddressFamily() != clientAddr.GetAddressFamily())
-			continue;
-
-		if (entry.NatBypassEnabled() != natBypass)
-			continue;
-
-		if (request.GetGamedir().compare(entry.GetGamedir()) != 0)
-			continue;
-
-		if (clientProtocol.has_value())
-		{
-			if (entry.GetProtocolVersion() != clientProtocol.value()) {
-				continue;
-			}
-		}
-
-		if (natBypass) {
-			SendNatBypassNotify(socket, serverAddr, clientAddr);
-		}
-		response.WriteNetAddress(serverAddr);
-	}
-
-	// write null address as an end of message marker
-	response.WriteByte(0x00, 6);
+	response.Serialize(stream, natServers);
 	socket.SendTo(clientAddr, buffer);
+
+	for (const auto &address : natServers) {
+		SendNatAnnounce(socket, address, clientAddr);
+	}
 }
 
 void RequestHandler::SendChallengeResponse(Socket &socket, const NetAddress &dest, uint32_t ch1, std::optional<uint32_t> ch2)
 {
 	uint8_t buffer[64];
 	BinaryOutputStream stream(buffer, sizeof(buffer));
-	
+
 	ServerChallengeResponse response(ch1, ch2);
 	response.Serialize(stream);
 	socket.SendTo(dest, buffer, sizeof(buffer));
@@ -287,7 +263,7 @@ void RequestHandler::SendFakeServerInfo(Socket &socket, const NetAddress &dest, 
 	sendServerInfo(u8"GooglePlay или GitHub");
 }
 
-void RequestHandler::SendNatBypassNotify(Socket &socket, const NetAddress &dest, const NetAddress &client)
+void RequestHandler::SendNatAnnounce(Socket &socket, const NetAddress &dest, const NetAddress &client)
 {
 	uint8_t buffer[64];
 	BinaryOutputStream natBypassPacket(buffer, sizeof(buffer));

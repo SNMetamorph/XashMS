@@ -17,7 +17,6 @@ GNU General Public License for more details.
 namespace MasterProtocol
 {
 	constexpr const char *removeServer = "b\n";
-	constexpr const char *queryPacketHeader = "\xff\xff\xff\xff\x66\n";
 	constexpr const char *natBypassPacketHeader = "\xff\xff\xff\xff\x63\x20";
 	constexpr const char *fakeServerInfoHeader = "\xff\xff\xff\xffinfo\n";
 }

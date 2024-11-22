@@ -47,7 +47,7 @@ private:
 	void SendClientQueryResponse(Socket &socket, const NetAddress &clientAddr, ClientQueryRequest &req);
 	void SendChallengeResponse(Socket &socket, const NetAddress &dest, uint32_t ch1, std::optional<uint32_t> ch2);
 	void SendFakeServerInfo(Socket &socket, const NetAddress &dest, const std::string &gamedir);
-	void SendNatBypassNotify(Socket &socket, const NetAddress &dest, const NetAddress &client);
+	void SendNatAnnounce(Socket &socket, const NetAddress &dest, const NetAddress &client);
 
 	ServerList &m_serverList;
 	ConfigManager &m_configManager;
