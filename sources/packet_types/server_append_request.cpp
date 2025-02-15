@@ -31,7 +31,13 @@ std::optional<ServerAppendRequest> ServerAppendRequest::Parse(BinaryInputStream 
 		return std::nullopt; // request infostring correctness and fullness check failed
 	}
 
+	auto version = VersionInfo::Parse(data["version"].value());
+	if (!version.has_value()) {
+		return std::nullopt; // error while parsing version info
+	}
+
 	object.m_challenge = std::atoll(data["challenge"].value().c_str());
+	object.m_serverVersion = version.value();
 	object.m_infostringData = std::move(data);
 	return object;
 }

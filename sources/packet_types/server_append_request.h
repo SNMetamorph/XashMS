@@ -15,6 +15,7 @@ GNU General Public License for more details.
 #pragma once
 #include "binary_input_stream.h"
 #include "infostring_data.h"
+#include "version_info.h"
 #include <optional>
 #include <stdint.h>
 
@@ -26,6 +27,7 @@ public:
 
 	uint32_t GetMasterChallenge() const { return m_challenge; }
 	const InfostringData &GetInfostringData() const { return m_infostringData; }
+	const VersionInfo &GetServerVersion() const { return m_serverVersion; }
 
 	static constexpr const char *Header = "0\n";
 
@@ -35,5 +37,6 @@ private:
 	bool ValidateInfostring(const InfostringData &data);
 
 	uint32_t m_challenge;
+	VersionInfo m_serverVersion;
 	InfostringData m_infostringData;
 };

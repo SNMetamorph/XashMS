@@ -141,6 +141,15 @@ void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &s
 		return;
 	}
 
+	const ConfigData &configData = m_configManager.GetData();
+	const VersionInfo &currentVersion = request.GetServerVersion();
+	const VersionInfo &minimalVersion = configData.GetServerMinimalVersion();
+	if (currentVersion < minimalVersion)
+	{
+		Utils::Log("Server {}:{} is outdated: version {} < {}\n", sourceAddr.ToString(), sourceAddr.GetPort(), currentVersion.ToString(), minimalVersion.ToString());
+		return;
+	}
+
 	bool serverExists = m_serverList.Contains(sourceAddr);
 	ServerEntry &server = m_serverList.Insert(sourceAddr);
 	server.Update(request.GetInfostringData()); 
@@ -156,7 +165,7 @@ void RequestHandler::ProcessAddServerRequest(Socket &socket, const NetAddress &s
 		server.GetPlayersCount(),
 		server.GetBotsCount(),
 		server.GetMaxPlayers(),
-		server.GetClientVersion());
+		server.GetVersion());
 }
 
 void RequestHandler::ProcessAdminChallengeRequest(Socket &socket, const NetAddress &sourceAddr)

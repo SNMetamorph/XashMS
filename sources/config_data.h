@@ -13,6 +13,7 @@ GNU General Public License for more details.
 */
 
 #pragma once
+#include "version_info.h"
 #include <vector>
 #include <string>
 #include <stdint.h>
@@ -43,6 +44,7 @@ public:
 	const std::string& GetAdminHashKey() const { return m_adminHashKey; }
 	const std::string& GetAdminHashPersonal() const { return m_adminHashPersonal; }
 	const std::vector<AdminEntry>& GetAdmins() const { return m_adminsList; }
+	const VersionInfo& GetServerMinimalVersion() const { return m_serverMinimalVersion; }
 
 private:
 	size_t m_serverCountQuota;
@@ -55,4 +57,5 @@ private:
 	std::string m_adminHashKey;
 	std::string m_adminHashPersonal;
 	std::vector<AdminEntry> m_adminsList;
+	VersionInfo m_serverMinimalVersion;
 };

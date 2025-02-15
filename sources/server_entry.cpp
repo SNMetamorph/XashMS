@@ -40,7 +40,7 @@ void ServerEntry::Update(const InfostringData &data)
 
 	m_gamedir = data["gamedir"].value();
 	m_mapName = data["map"].value();
-	m_clientVersion = data["version"].value();
+	m_version = data["version"].value();
 	m_osType = data["os"].value();
 	m_product = data["product"].value();
 	m_dedicated = !data["type"].value().compare("d") ? true : false;

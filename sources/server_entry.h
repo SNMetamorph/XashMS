@@ -40,7 +40,7 @@ public:
 	uint32_t GetPlayersCount() const { return m_players; }
 	const std::string &GetMapName() const { return m_mapName; }
 	const std::string &GetGamedir() const { return m_gamedir; }
-	const std::string &GetClientVersion() const { return m_clientVersion; }
+	const std::string &GetVersion() const { return m_version; }
 	const NetAddress &GetAddress() const { return m_address; }
 
 private:
@@ -52,7 +52,7 @@ private:
 	uint32_t m_regionCode;
 	std::string m_gamedir;
 	std::string m_mapName;
-	std::string m_clientVersion;
+	std::string m_version;
 	std::string m_serverType;
 	std::string m_osType;
 	std::string m_product;

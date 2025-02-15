@@ -23,6 +23,7 @@ list(APPEND FILE_SOURCES
 	"sources/event_loop.cpp"
 	"sources/libevent_wrappers.cpp"
 	"sources/net_address.cpp"
+	"sources/version_info.cpp"
 	"sources/infostring_data.cpp"
 	"sources/request_handler.cpp"
 	"sources/binary_input_stream.cpp"

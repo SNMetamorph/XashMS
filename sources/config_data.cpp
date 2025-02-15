@@ -25,7 +25,8 @@ ConfigData::ConfigData() :
 	m_serverTimeoutInterval(360.0f),
 	m_challengeTimeoutInterval(15.0f),
 	m_adminHashKey("Half-Life"),
-	m_adminHashPersonal("Freeman")
+	m_adminHashPersonal("Freeman"),
+	m_serverMinimalVersion(0, 19, 2)
 {
 }
 
@@ -45,7 +46,8 @@ bool ConfigData::Parse(const std::string &jsonData)
 		!document.HasMember("challenge_timeout_interval") ||
 		!document.HasMember("admin_hash_length") ||
 		!document.HasMember("admin_hash_key") ||
-		!document.HasMember("admin_hash_personal")) 
+		!document.HasMember("admin_hash_personal") ||
+		!document.HasMember("server_min_version"))
 	{
 		return false;
 	}
@@ -56,7 +58,8 @@ bool ConfigData::Parse(const std::string &jsonData)
 		!document["challenge_timeout_interval"].IsFloat() ||
 		!document["admin_hash_length"].IsInt() ||
 		!document["admin_hash_key"].IsString() ||
-		!document["admin_hash_personal"].IsString())
+		!document["admin_hash_personal"].IsString() ||
+		!document["server_min_version"].IsString())
 	{
 		return false;
 	}
@@ -77,6 +80,11 @@ bool ConfigData::Parse(const std::string &jsonData)
 		}
 	}
 
+	auto version = VersionInfo::Parse(document["server_min_version"].GetString());
+	if (!version.has_value()) {
+		return false;
+	}
+
 	m_adminHashLength = document["admin_hash_length"].GetInt();
 	m_serverCountQuota = document["max_servers_per_ip"].GetInt();
 	m_cleanupInterval = document["cleanup_interval"].GetFloat();
@@ -84,5 +92,6 @@ bool ConfigData::Parse(const std::string &jsonData)
 	m_challengeTimeoutInterval = document["challenge_timeout_interval"].GetFloat();
 	m_adminHashKey = document["admin_hash_key"].GetString();
 	m_adminHashPersonal = document["admin_hash_personal"].GetString();
+	m_serverMinimalVersion = version.value();
 	return true;
 }
