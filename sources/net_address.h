@@ -61,7 +61,7 @@ public:
 	void FromSockadr(const sockaddr_in *address);
 	void FromSockadr(const sockaddr_in6 *address);
 
-	static std::optional<NetAddress> Parse(const char *address, uint16_t port = 0);
+	static std::optional<NetAddress> Parse(std::string_view address, uint16_t port = 0);
 
 private:
 	uint16_t m_port;
