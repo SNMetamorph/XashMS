@@ -12,6 +12,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 */
 
+#include <scn/scan.h>
 #include "server_entry.h"
 
 ServerEntry::ServerEntry(const NetAddress &address) :
@@ -32,22 +33,22 @@ ServerEntry::ServerEntry(const NetAddress &address) :
 
 void ServerEntry::Update(const InfostringData &data)
 {
-	m_protocol = std::atoll(data["protocol"].value().c_str());
-	m_players = std::atoll(data["players"].value().c_str());
-	m_maxPlayers = std::atoll(data["max"].value().c_str());
-	m_bots = std::atoll(data["bots"].value().c_str());
-	m_regionCode = std::atoll(data["region"].value().c_str());
+	m_protocol = scn::scan_int<uint32_t>(data["protocol"].value())->value();
+	m_players = scn::scan_int<uint32_t>(data["players"].value())->value();
+	m_maxPlayers = scn::scan_int<uint32_t>(data["max"].value())->value();
+	m_bots = scn::scan_int<uint32_t>(data["bots"].value())->value();
+	m_regionCode = scn::scan_int<uint32_t>(data["region"].value())->value();
 
 	m_gamedir = data["gamedir"].value();
 	m_mapName = data["map"].value();
 	m_version = data["version"].value();
 	m_osType = data["os"].value();
 	m_product = data["product"].value();
-	m_dedicated = !data["type"].value().compare("d") ? true : false;
-	m_passwordUsed = !data["password"].value().compare("0") ? false : true;
-	m_secured = !data["secure"].value().compare("0") ? false : true;
-	m_lanMode = !data["lan"].value().compare("0") ? false : true;
-	m_natBypass = !data["nat"].value().compare("0") ? false : true;
+	m_dedicated = data["type"].value().compare("d") ? false : true;
+	m_passwordUsed = data["password"].value().compare("0") ? true : false;
+	m_secured = data["secure"].value().compare("0") ? true : false;
+	m_lanMode = data["lan"].value().compare("0") ? true : false;
+	m_natBypass = data["nat"].value().compare("0") ? true : false;
 }
 
 void ServerEntry::ResetTimeout()

@@ -12,6 +12,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 */
 
+#include <scn/scan.h>
 #include "server_append_request.h"
 
 std::optional<ServerAppendRequest> ServerAppendRequest::Parse(BinaryInputStream &stream)
@@ -36,7 +37,12 @@ std::optional<ServerAppendRequest> ServerAppendRequest::Parse(BinaryInputStream 
 		return std::nullopt; // error while parsing version info
 	}
 
-	object.m_challenge = std::atoll(data["challenge"].value().c_str());
+	auto challenge = scn::scan_int<uint32_t>(data["challenge"].value());
+	if (!challenge.has_value()) {
+		return std::nullopt; // error while parsing challenge data
+	}
+
+	object.m_challenge = challenge->value();
 	object.m_serverVersion = version.value();
 	object.m_infostringData = std::move(data);
 	return object;

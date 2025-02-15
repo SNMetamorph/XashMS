@@ -12,6 +12,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 */
 
+#include <scn/scan.h>
 #include "client_query_request.h"
 
 // such function is an experimental approach to RAII without exceptions
@@ -45,10 +46,11 @@ std::optional<ClientQueryRequest> ClientQueryRequest::Parse(BinaryInputStream &s
 
 	if (data["key"].has_value())
 	{
-		try {
-			object.m_queryKey = std::stoi(data["key"].value(), nullptr, 16);
+		auto scan = scn::scan_int<uint32_t>(data["key"].value(), 16);
+		if (scan.has_value()) {
+			object.m_queryKey = scan->value();
 		}
-		catch (const std::exception &ex) {
+		else {
 			return std::nullopt; // invalid data in query key
 		}
 	}
@@ -56,8 +58,15 @@ std::optional<ClientQueryRequest> ClientQueryRequest::Parse(BinaryInputStream &s
 		object.m_queryKey = std::nullopt;
 	}
 	
-	if (data["protocol"].has_value()) {
-		object.m_protocolVersion = std::atoi(data["protocol"].value().c_str());
+	if (data["protocol"].has_value()) 
+	{
+		auto scan = scn::scan_int<uint32_t>(data["protocol"].value());
+		if (scan.has_value()) {
+			object.m_protocolVersion = scan->value();
+		}
+		else {
+			return std::nullopt; // invalid protocol number
+		}
 	}
 	else {
 		object.m_protocolVersion = std::nullopt;
