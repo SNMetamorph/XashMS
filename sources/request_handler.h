@@ -55,6 +55,5 @@ private:
 	AdminCommandHandler m_adminCommandHandler;
 	std::vector<NetAddress> m_natAnnouncedServers;
 	std::unordered_set<NetAddress, NetAddressHash> m_banlist;
-	std::unordered_map<NetAddress, Timer, NetAddressHash> m_rateLimitBanlist;
 	std::unordered_map<NetAddress, uint32_t, NetAddressHash> m_packetRateMap;
 };
