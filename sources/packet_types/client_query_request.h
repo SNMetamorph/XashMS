@@ -15,6 +15,7 @@ GNU General Public License for more details.
 #pragma once
 #include "binary_input_stream.h"
 #include "infostring_data.h"
+#include "version_info.h"
 #include <optional>
 #include <stdint.h>
 
@@ -24,12 +25,11 @@ public:
 	~ClientQueryRequest() = default;
 	static std::optional<ClientQueryRequest> Parse(BinaryInputStream& stream);
 
-	bool ClientOutdated() const { return m_clientOutdated; };
 	bool ClientBypassingNat() const { return m_clientBypassingNat; }
 	const std::string &GetGamedir() const { return m_gamedir; }
 	std::optional<uint32_t> GetQueryKey() const { return m_queryKey; };
 	std::optional<uint32_t> GetProtocolVersion() const { return m_protocolVersion; }
-	std::optional<std::string> GetClientVersion() const { return m_clientVersion; }
+	std::optional<VersionInfo> GetClientVersion() const { return m_clientVersion; }
 
 	static constexpr const char *Header = "1";
 
@@ -38,10 +38,9 @@ private:
 
 	bool ValidateInfostring(const InfostringData &data) const;
 
-	bool m_clientOutdated;
 	bool m_clientBypassingNat;
 	std::string m_gamedir;
 	std::optional<uint32_t> m_queryKey;
 	std::optional<uint32_t> m_protocolVersion;
-	std::optional<std::string> m_clientVersion;
+	std::optional<VersionInfo> m_clientVersion;
 };

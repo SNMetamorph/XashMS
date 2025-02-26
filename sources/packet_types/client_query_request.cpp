@@ -72,9 +72,14 @@ std::optional<ClientQueryRequest> ClientQueryRequest::Parse(BinaryInputStream &s
 		object.m_protocolVersion = std::nullopt;
 	}
 
-	object.m_clientOutdated = !data["clver"].has_value();
+	if (data["clver"].has_value()) {
+		object.m_clientVersion = VersionInfo::Parse(data["clver"].value());
+	}
+	else {
+		object.m_clientVersion = std::nullopt;
+	}
+
 	object.m_clientBypassingNat = data["nat"].value().compare("0") != 0;
-	object.m_clientVersion = data["clver"];
 	object.m_gamedir = data["gamedir"].value();
 	return object;
 }

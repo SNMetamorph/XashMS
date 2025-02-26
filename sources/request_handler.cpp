@@ -108,20 +108,22 @@ void RequestHandler::HandleRequest(Socket &socket, const NetAddress &sourceAddr)
 
 void RequestHandler::ProcessClientQuery(Socket &socket, const NetAddress &sourceAddr, ClientQueryRequest &request)
 {
-	if (request.ClientOutdated()) {
-		SendFakeServerInfo(socket, sourceAddr, request.GetGamedir());
-	}
-	else 
+	auto clientVersion = request.GetClientVersion();
+	if (clientVersion.has_value() && clientVersion >= m_configManager.GetData().GetClientMinimalVersion()) 
 	{
 		SendClientQueryResponse(socket, sourceAddr, request);
 		SendNatAnnouncements(socket, sourceAddr);
 	}
+	else {
+		SendFakeServerInfo(socket, sourceAddr, request.GetGamedir());
+	}
 
+	const std::string versionName = clientVersion.has_value() ? clientVersion->ToString() : "unknown";
 	Utils::Log("Client query: {}:{}, gamedir={}, clver={}, nat={}\n", 
 		sourceAddr.ToString(), 
 		sourceAddr.GetPort(), 
 		request.GetGamedir(),
-		request.GetClientVersion().value_or("unknown"),
+		versionName,
 		request.ClientBypassingNat() ? 1 : 0);
 }
 
