@@ -27,6 +27,64 @@ VersionInfo::VersionInfo(uint32_t _major, uint32_t _minor, std::optional<uint32_
 {
 }
 
+bool VersionInfo::operator<(const VersionInfo &rhs) const
+{
+	if (major < rhs.major) {
+		return true;
+	}
+	else if (major > rhs.major) {
+		return false;
+	}
+	else
+	{
+		if (minor < rhs.minor) {
+			return true;
+		}
+		else if (minor > rhs.minor) {
+			return false;
+		}
+		else
+		{
+			const uint32_t lhsPatch = patch.has_value() ? patch.value() : 0;
+			const uint32_t rhsPatch = rhs.patch.has_value() ? rhs.patch.value() : 0;
+			if (lhsPatch < rhsPatch) {
+				return true;
+			}
+			else if (lhsPatch > rhsPatch) {
+				return false;
+			}
+			return false; // they're equal
+		}
+	}
+}
+
+bool VersionInfo::operator==(const VersionInfo &rhs) const
+{
+	const uint32_t lhsPatch = patch.has_value() ? patch.value() : 0;
+	const uint32_t rhsPatch = rhs.patch.has_value() ? rhs.patch.value() : 0;
+	return major == rhs.major && minor == rhs.minor && lhsPatch == rhsPatch;
+}
+
+bool VersionInfo::operator!=(const VersionInfo &rhs) const
+{
+	return !(*this == rhs);
+}
+
+bool VersionInfo::operator>(const VersionInfo &rhs) const
+{
+	return rhs < *this;
+}
+
+bool VersionInfo::operator<=(const VersionInfo &rhs) const
+{
+	return !(rhs < *this);
+}
+
+bool VersionInfo::operator>=(const VersionInfo &rhs) const
+{
+	return !(*this < rhs);
+}
+
 std::optional<VersionInfo> VersionInfo::Parse(std::string_view text)
 {
 	auto s1 = scn::scan<uint32_t, uint32_t>(text, "{}.{}");

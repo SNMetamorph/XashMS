@@ -13,10 +13,9 @@ GNU General Public License for more details.
 */
 
 #pragma once
-#include <tuple>
-#include <optional>
 #include <string>
 #include <string_view>
+#include <optional>
 #include <stdint.h>
 
 class VersionInfo
@@ -25,6 +24,13 @@ public:
 	VersionInfo();
 	VersionInfo(uint32_t major, uint32_t minor, std::optional<uint32_t> patch);
 
+	bool operator<(const VersionInfo &rhs) const;
+	bool operator==(const VersionInfo &rhs) const;
+	bool operator!=(const VersionInfo &rhs) const;
+	bool operator>(const VersionInfo &rhs) const;
+	bool operator<=(const VersionInfo &rhs) const;
+	bool operator>=(const VersionInfo &rhs) const;
+
 	static std::optional<VersionInfo> Parse(std::string_view text);
 	std::string ToString() const;
 
@@ -32,8 +38,3 @@ public:
 	uint32_t minor;
 	std::optional<uint32_t> patch;
 };
-
-inline bool operator<(const VersionInfo& a, const VersionInfo& b) 
-{
-    return std::tie(a.major, a.minor, a.patch) < std::tie(b.major, b.minor, b.patch);
-}
