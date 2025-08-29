@@ -34,12 +34,12 @@ BinaryOutputStream::BinaryOutputStream(uint8_t *buffer, size_t bufferSize) :
 
 const uint8_t *BinaryOutputStream::GetBuffer() const
 {
-	return m_dynamicBuffer.has_value() ? m_dynamicBuffer.value().get().data() : m_buffer;
+	return m_dynamicBuffer.has_value() ? m_dynamicBuffer->get().data() : m_buffer;
 }
 
 size_t BinaryOutputStream::GetLength() const
 {
-	return m_dynamicBuffer.has_value() ? m_dynamicBuffer.value().get().size() : m_offset;
+	return m_dynamicBuffer.has_value() ? m_dynamicBuffer->get().size() : m_offset;
 }
 
 bool BinaryOutputStream::WriteString(const char *text, bool includeNull)
@@ -53,7 +53,7 @@ bool BinaryOutputStream::WriteBytes(const void *data, size_t count)
 	const uint8_t *sourceBuffer = reinterpret_cast<const uint8_t*>(data);
 	if (m_dynamicBuffer.has_value()) 
 	{
-		auto &dynamicBuffer = m_dynamicBuffer.value().get();
+		auto &dynamicBuffer = m_dynamicBuffer->get();
 		dynamicBuffer.reserve(dynamicBuffer.size() + count);
 		dynamicBuffer.insert(dynamicBuffer.end(), sourceBuffer, sourceBuffer + count);
 		return true;
@@ -74,7 +74,7 @@ bool BinaryOutputStream::WriteByte(uint8_t value, size_t repeats)
 {
 	if (m_dynamicBuffer.has_value()) 
 	{
-		auto &dynamicBuffer = m_dynamicBuffer.value().get();
+		auto &dynamicBuffer = m_dynamicBuffer->get();
 		dynamicBuffer.reserve(dynamicBuffer.size() + repeats);
 		dynamicBuffer.insert(dynamicBuffer.end(), repeats, value);
 		return true;
