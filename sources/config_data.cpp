@@ -24,8 +24,8 @@ ConfigData::ConfigData() :
 	m_challengeTimeoutInterval(15.0f),
 	m_adminHashKey("Half-Life"),
 	m_adminHashPersonal("Freeman"),
-	m_serverMinimalVersion(0, 19, 2),
-	m_clientMinimalVersion(0, 19, 4)
+	m_serverMinimalVersion(0, 21, 0),
+	m_clientMinimalVersion(0, 21, 0)
 {
 }
 
